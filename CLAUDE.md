@@ -21,3 +21,9 @@
 - 本プロジェクトは基本的にPythonで実装する
 - コードの実装方法は `docs/python_coding_guidelines.md` に従う
 - コードのコメントは `docs/COMMENT_STYLE_GUIDE.md` に従う
+
+## セットアップガイド
+
+- 環境構築作業は `docs/setup_guide.md` に記録する
+- 初心者にもわかりやすい説明を心がけること
+- 実施した全ての手順を漏れなく記載すること

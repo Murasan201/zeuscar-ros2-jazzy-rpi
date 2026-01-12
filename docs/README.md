@@ -4,6 +4,10 @@
 
 - [zeus_car_ros_2_jazzy_rpi_requirements.md](zeus_car_ros_2_jazzy_rpi_requirements.md) - 本プロジェクトの要件定義書
 
+## セットアップガイド
+
+- [setup_guide.md](setup_guide.md) - 環境構築手順（初心者向け）
+
 ## 開発プロセス
 
 - [agile_tdd_operating_rules.md](agile_tdd_operating_rules.md) - アジャイル・TDD運用ルール
