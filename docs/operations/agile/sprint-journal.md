@@ -65,6 +65,9 @@
 |---|---|---|---|---|
 | STORY-001 | ROS 2ワークスペース作成 | - | Done | - |
 | STORY-002 | 基本パッケージ構成作成 | - | Done | - |
+| STORY-003 | zeuscar_lidarパッケージ作成 | - | Done | - |
+| STORY-004 | LiDAR launchファイル作成 | - | Done | - |
+| STORY-005 | /scanトピック動作確認 | - | ToDo | ※ハードウェア接続待ち |
 
 #### 完了した作業
 
@@ -93,6 +96,24 @@
 6. **セットアップガイド更新**
    - docs/setup_guide.mdにワークスペース作成手順を追記
 
+**2026-01-12: EPIC-002 LiDAR統合**
+
+1. **rplidar_rosパッケージインストール**
+   - ros-jazzy-rplidar-rosをインストール
+
+2. **zeuscar_lidarパッケージ更新**
+   - lidar.launch.pyを作成（rplidar_rosをラップ）
+   - rplidar_a1.yamlで設定パラメータを定義
+   - 99-rplidar.rulesでudevルールを作成
+   - setup.pyにlaunch/configのインストール設定を追加
+   - package.xmlに依存関係を追加
+
+3. **セットアップガイド更新**
+   - Section 4（LiDARのセットアップ）を追記
+
+4. **残タスク**
+   - STORY-005: LiDARハードウェア接続後に動作確認
+
 #### PMブリーフ管理
 
 | ID | 概要 | ステータス |
@@ -113,3 +134,4 @@
 |---|---|---|
 | 2026-01-12 | - | 初版作成、プロジェクト初期化フェーズ記録 |
 | 2026-01-12 | - | スプリント1開始、EPIC-001完了記録 |
+| 2026-01-12 | - | EPIC-002 LiDAR統合進捗を記録 |

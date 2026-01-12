@@ -317,7 +317,135 @@ zeuscar_slam
 
 ## 4. LiDARのセットアップ
 
-（作業実施後に手順を記載）
+### 4.1 RPLIDAR A1M8について
+
+RPLIDAR A1M8は、SLAMTEC社製の低価格2D LiDARセンサです。360度スキャンが可能で、最大12mの測定距離を持ちます。
+
+| 項目 | 仕様 |
+|---|---|
+| 測定範囲 | 0.15m〜12m |
+| スキャン周波数 | 5.5Hz |
+| 角度分解能 | 1度以下 |
+| インターフェース | USB（シリアル） |
+
+### 4.2 rplidar_rosパッケージのインストール
+
+ROS 2用のRPLIDARドライバをインストールします：
+
+```bash
+sudo apt install -y ros-jazzy-rplidar-ros
+```
+
+### 4.3 udevルールの設定
+
+LiDARを常に`/dev/rplidar`として認識させるため、udevルールを設定します。
+
+```bash
+# udevルールファイルを作成
+sudo tee /etc/udev/rules.d/99-rplidar.rules << 'EOF'
+# RPLIDAR A1M8 (Silicon Labs CP210x)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="0666", SYMLINK+="rplidar"
+EOF
+
+# ルールを再読み込み
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+### 4.4 LiDARの接続確認
+
+LiDARをUSBポートに接続し、認識されているか確認します：
+
+```bash
+# デバイスの確認
+ls -la /dev/rplidar
+```
+
+出力例：
+```
+lrwxrwxrwx 1 root root 7 Jan 12 12:00 /dev/rplidar -> ttyUSB0
+```
+
+シンボリックリンクが作成されていれば成功です。
+
+### 4.5 ZeusCar LiDARパッケージの確認
+
+zeuscar_lidarパッケージには、RPLIDAR A1用のlaunchファイルが含まれています：
+
+```bash
+# パッケージの確認
+ros2 pkg list | grep zeuscar_lidar
+
+# launchファイルの確認
+ls ~/ros2_ws/src/zeuscar_lidar/launch/
+```
+
+### 4.6 LiDARの起動
+
+```bash
+# ワークスペースの環境を読み込み
+source ~/ros2_ws/install/setup.bash
+
+# LiDARを起動
+ros2 launch zeuscar_lidar lidar.launch.py
+```
+
+正常に起動すると、以下のようなログが表示されます：
+
+```
+[rplidar_node]: RPLIDAR running on ROS2 package rplidar_ros
+[rplidar_node]: SDK Version: x.x.x
+[rplidar_node]: Firmware Ver: x.xx
+[rplidar_node]: Hardware Rev: x
+```
+
+### 4.7 /scanトピックの確認
+
+別のターミナルで、/scanトピックが正しくパブリッシュされているか確認します：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# トピック一覧
+ros2 topic list | grep scan
+```
+
+出力例：
+```
+/scan
+```
+
+```bash
+# トピックの型を確認
+ros2 topic info /scan
+```
+
+出力例：
+```
+Type: sensor_msgs/msg/LaserScan
+Publisher count: 1
+Subscription count: 0
+```
+
+```bash
+# データの確認（Ctrl+Cで停止）
+ros2 topic echo /scan --once
+```
+
+### 4.8 launchファイルのパラメータ
+
+zeuscar_lidarのlaunchファイルは以下のパラメータをサポートしています：
+
+| パラメータ | デフォルト値 | 説明 |
+|---|---|---|
+| serial_port | /dev/rplidar | シリアルポート |
+| frame_id | laser_frame | TFフレームID |
+
+例：別のポートを使用する場合：
+
+```bash
+ros2 launch zeuscar_lidar lidar.launch.py serial_port:=/dev/ttyUSB0
+```
 
 ---
 
@@ -394,3 +522,4 @@ ros2 run demo_nodes_cpp talker
 | 2026-01-12 | ROS 2 Jazzyインストール手順を追加 |
 | 2026-01-12 | ワークスペース作成手順を追加 |
 | 2026-01-12 | トラブルシューティング追加（colcon、ros2 --version） |
+| 2026-01-12 | LiDARセットアップ手順を追加 |

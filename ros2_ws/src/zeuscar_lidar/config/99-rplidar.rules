@@ -1,0 +1,6 @@
+# RPLIDAR A1M8 udev rules
+# Install: sudo cp 99-rplidar.rules /etc/udev/rules.d/
+# Reload:  sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# RPLIDAR A1 (Silicon Labs CP210x)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="0666", SYMLINK+="rplidar"
