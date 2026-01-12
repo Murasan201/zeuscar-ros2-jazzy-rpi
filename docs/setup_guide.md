@@ -156,14 +156,13 @@ source ~/.bashrc
 
 ### 2.7 インストールの確認
 
+以下のコマンドでROS 2が正しくインストールされたか確認します：
+
 ```bash
-ros2 --version
+ros2 topic list
 ```
 
-出力例：
-```
-ros2 0.11.x
-```
+何も起動していない場合は空のリストが表示されますが、エラーが出なければOKです。
 
 また、以下のコマンドでノードの動作確認ができます：
 
@@ -357,6 +356,33 @@ cat /etc/apt/sources.list.d/ros2.list
 echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/ros2.list
 ```
 
+### 8.2 colconコマンドが見つからない
+
+**症状**: `colcon build`を実行すると`colcon: command not found`エラーが表示される
+
+**原因**: `ros-jazzy-desktop`にはcolconが含まれていない
+
+**解決策**:
+```bash
+sudo apt install -y python3-colcon-common-extensions
+```
+
+### 8.3 ros2 --versionが動作しない
+
+**症状**: `ros2 --version`を実行してもバージョンが表示されない
+
+**原因**: ROS 2 CLIには`--version`オプションが存在しない
+
+**解決策**:
+インストール確認は以下のコマンドで行います：
+```bash
+# トピック一覧を表示（空でもエラーが出なければOK）
+ros2 topic list
+
+# またはデモノードで確認
+ros2 run demo_nodes_cpp talker
+```
+
 ---
 
 ## 更新履歴
@@ -367,3 +393,4 @@ echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] htt
 | 2026-01-12 | Ubuntu 24.04インストール手順を追加 |
 | 2026-01-12 | ROS 2 Jazzyインストール手順を追加 |
 | 2026-01-12 | ワークスペース作成手順を追加 |
+| 2026-01-12 | トラブルシューティング追加（colcon、ros2 --version） |
