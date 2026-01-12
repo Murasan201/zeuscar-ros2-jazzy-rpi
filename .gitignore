@@ -1,0 +1,16 @@
+# ROS 2 / colcon build directories
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

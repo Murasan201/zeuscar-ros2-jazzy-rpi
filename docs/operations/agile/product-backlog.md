@@ -8,7 +8,7 @@
 
 | エピックID | タイトル | 説明 | ステータス |
 |---|---|---|---|
-| EPIC-001 | ROS 2環境構築 | Raspberry Pi上のROS 2 Jazzy環境を構築 | ToDo |
+| EPIC-001 | ROS 2環境構築 | Raspberry Pi上のROS 2 Jazzy環境を構築 | Done |
 | EPIC-002 | LiDAR統合 | RPLIDAR A1M8のROS 2統合 | ToDo |
 | EPIC-003 | TF/URDF設計 | ロボットのTFツリーとURDF定義 | ToDo |
 | EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | ToDo |
@@ -22,8 +22,8 @@
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
 |---|---|---|---|---|---|
-| STORY-001 | ROS 2ワークスペース作成 | High | - | ToDo | - |
-| STORY-002 | 基本パッケージ構成作成 | High | - | ToDo | - |
+| STORY-001 | ROS 2ワークスペース作成 | High | - | Done | - |
+| STORY-002 | 基本パッケージ構成作成 | High | - | Done | - |
 
 ### EPIC-002: LiDAR統合
 
@@ -78,3 +78,4 @@
 | 日付 | 更新者 | 内容 |
 |---|---|---|
 | 2026-01-12 | - | 初版作成 |
+| 2026-01-12 | - | EPIC-001完了、STORY-001/002を Done に更新 |
