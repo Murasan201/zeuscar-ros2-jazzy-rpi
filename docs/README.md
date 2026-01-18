@@ -18,6 +18,10 @@
 - [python_coding_guidelines.md](python_coding_guidelines.md) - Pythonコーディングガイドライン
 - [COMMENT_STYLE_GUIDE.md](COMMENT_STYLE_GUIDE.md) - コメントスタイルガイド
 
+## リソース
+
+- `images/` - 画像ファイル格納ディレクトリ
+
 ## 運用ドキュメント (operations/)
 
 ### アジャイル管理 (operations/agile/)
