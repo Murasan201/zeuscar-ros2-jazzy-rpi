@@ -9,7 +9,7 @@
 | エピックID | タイトル | 説明 | ステータス |
 |---|---|---|---|
 | EPIC-001 | ROS 2環境構築 | Raspberry Pi上のROS 2 Jazzy環境を構築 | Done |
-| EPIC-002 | LiDAR統合 | RPLIDAR A1M8のROS 2統合 | In Progress |
+| EPIC-002 | LiDAR統合 | RPLIDAR A1M8のROS 2統合 | Done |
 | EPIC-003 | TF/URDF設計 | ロボットのTFツリーとURDF定義 | Done |
 | EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | ToDo |
 | EPIC-005 | 可視化 | RVizによる可視化環境 | ToDo |
@@ -31,7 +31,7 @@
 |---|---|---|---|---|---|
 | STORY-003 | zeuscar_lidarパッケージ作成 | High | - | Done | - |
 | STORY-004 | LiDAR launchファイル作成 | High | - | Done | - |
-| STORY-005 | /scanトピック動作確認 | High | - | ToDo | ※ハードウェア接続待ち |
+| STORY-005 | /scanトピック動作確認 | High | - | Done | - |
 
 ### EPIC-003: TF/URDF設計
 
@@ -81,3 +81,4 @@
 | 2026-01-12 | - | EPIC-001完了、STORY-001/002を Done に更新 |
 | 2026-01-12 | - | EPIC-002進行中、STORY-003/004を Done に更新 |
 | 2026-01-19 | - | EPIC-003完了、STORY-006/007/008を Done に更新 |
+| 2026-01-19 | - | EPIC-002完了、STORY-005を Done に更新 |

@@ -67,7 +67,7 @@
 | STORY-002 | 基本パッケージ構成作成 | - | Done | - |
 | STORY-003 | zeuscar_lidarパッケージ作成 | - | Done | - |
 | STORY-004 | LiDAR launchファイル作成 | - | Done | - |
-| STORY-005 | /scanトピック動作確認 | - | ToDo | ※ハードウェア接続待ち |
+| STORY-005 | /scanトピック動作確認 | - | Done | EPIC-002 |
 | STORY-006 | zeuscar_descriptionパッケージ作成 | - | Done | EPIC-003 |
 | STORY-007 | URDF作成 | - | Done | EPIC-003 |
 | STORY-008 | TFツリー設計・実装 | - | Done | EPIC-003 |
@@ -114,8 +114,22 @@
 3. **セットアップガイド更新**
    - Section 4（LiDARのセットアップ）を追記
 
-4. **残タスク**
-   - STORY-005: LiDARハードウェア接続後に動作確認
+**2026-01-19: EPIC-002 LiDAR統合完了**
+
+1. **udevルール設定**
+   - /etc/udev/rules.d/99-rplidar.rules を作成
+   - /dev/rplidar シンボリックリンクを確認
+
+2. **LiDAR動作確認**
+   - ros2 launch zeuscar_lidar lidar.launch.py 起動成功
+   - RPLIDAR SDK Version: 1.12.0
+   - Firmware Ver: 1.29, Hardware Rev: 7
+   - Scan mode: Sensitivity, max_distance: 12.0m
+
+3. **/scanトピック確認**
+   - Type: sensor_msgs/msg/LaserScan
+   - frame_id: laser_frame（正しく設定）
+   - Publisher count: 2
 
 **2026-01-19: EPIC-003 TF/URDF設計完了**
 
@@ -176,3 +190,4 @@
 | 2026-01-12 | - | スプリント1開始、EPIC-001完了記録 |
 | 2026-01-12 | - | EPIC-002 LiDAR統合進捗を記録 |
 | 2026-01-19 | - | EPIC-003 TF/URDF設計完了（ビルド・検証含む） |
+| 2026-01-19 | - | EPIC-002 LiDAR統合完了（/scanトピック動作確認） |
