@@ -871,6 +871,73 @@ robot_state_publisher = Node(
 - ROS 2 Jazzy（Iron以降）で必要になった変更
 - 公式ドキュメントでも推奨されている方法
 
+### 8.6 /dev/rplidarシンボリックリンクが作成されない
+
+**症状**: LiDARを接続しても`/dev/rplidar`が作成されない
+
+```bash
+ls -la /dev/rplidar
+# ls: cannot access '/dev/rplidar': No such file or directory
+```
+
+**原因1**: udevルールファイルが作成されていない
+
+**解決策1**:
+```bash
+# udevルールファイルを作成
+sudo tee /etc/udev/rules.d/99-rplidar.rules << 'EOF'
+# RPLIDAR A1M8 (Silicon Labs CP210x)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="0666", SYMLINK+="rplidar"
+EOF
+
+# ルールを再読み込み
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+**原因2**: udevトリガー後も作成されない場合
+
+**解決策2**:
+特定のデバイスに対して直接トリガーを実行する:
+```bash
+sudo udevadm trigger --action=add /dev/ttyUSB0
+```
+
+または、LiDARのUSBケーブルを一度抜いて再接続する。
+
+### 8.7 LiDARデバイスの権限エラー
+
+**症状**: LiDAR起動時に権限エラーが発生する
+
+```
+[ERROR] [rplidar_node]: Error, cannot bind to the specified serial port /dev/rplidar
+```
+
+**原因**: ユーザーがデバイスファイルへのアクセス権限を持っていない
+
+**解決策1**: udevルールでMODE="0666"を設定（推奨）
+```bash
+# /etc/udev/rules.d/99-rplidar.rules にMODE="0666"が含まれていることを確認
+cat /etc/udev/rules.d/99-rplidar.rules
+```
+
+**解決策2**: ユーザーをdialoutグループに追加
+```bash
+sudo usermod -aG dialout $USER
+# ログアウト・ログインが必要
+```
+
+**確認方法**:
+```bash
+# 権限の確認
+ls -la /dev/ttyUSB0
+# MODE="0666"の場合: crw-rw-rw- 1 root dialout ...
+
+# グループの確認
+groups
+# dialout が含まれていればOK
+```
+
 ---
 
 ## 更新履歴
@@ -887,3 +954,4 @@ robot_state_publisher = Node(
 | 2026-01-19 | 実機の計測方法（Section 5.3）を追加 |
 | 2026-01-19 | xacroパッケージインストール手順を追加（Section 5.5） |
 | 2026-01-19 | トラブルシューティング追加（8.4 xacro、8.5 ParameterValue） |
+| 2026-01-19 | トラブルシューティング追加（8.6 udevルール、8.7 LiDAR権限） |
