@@ -19,7 +19,8 @@
 ## 実装ルール
 
 - 本プロジェクトは基本的にPythonで実装する
-- PEP 8に準拠したコーディングスタイルを使用する
+- コードの実装方法は `docs/python_coding_guidelines.md` に従う
+- コードのコメントは `docs/COMMENT_STYLE_GUIDE.md` に従う
 
 ## セットアップガイド
 
