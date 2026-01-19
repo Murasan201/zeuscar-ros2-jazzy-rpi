@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!--
+  ZeusCar URDF定義
+
+  フレーム構成:
+    base_footprint - 地面投影フレーム（z=0）
+      └── base_link - ロボット本体中心
+            └── laser_frame - LiDARスキャン面
+
+  座標系: REP-103準拠
+    X軸: 前方が正
+    Y軸: 左方が正
+    Z軸: 上方が正
+
+  実測値:
+    ロボット本体: 163mm(L) x 177mm(W)
+    LiDAR位置: x:+3.5mm, y:-4.5mm, z:235mm, yaw:+90deg
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="zeuscar">
+
+  <!-- ========== パラメータ定義 ========== -->
+
+  <!-- ロボット本体寸法 (m) -->
+  <xacro:property name="body_length" value="0.163"/>
+  <xacro:property name="body_width" value="0.177"/>
+  <xacro:property name="body_height" value="0.05"/>
+
+  <!-- base_linkの地面からの高さ (m) -->
+  <!-- ホイール半径が未計測のため、仮値を使用 -->
+  <xacro:property name="base_link_height" value="0.05"/>
+
+  <!-- LiDAR取り付け位置 (m) -->
+  <xacro:property name="lidar_x" value="0.0035"/>
+  <xacro:property name="lidar_y" value="-0.0045"/>
+  <xacro:property name="lidar_z" value="0.235"/>
+  <xacro:property name="lidar_yaw" value="1.5708"/>
+
+  <!-- LiDAR寸法 (RPLIDAR A1M8概算) -->
+  <xacro:property name="lidar_radius" value="0.035"/>
+  <xacro:property name="lidar_height" value="0.04"/>
+
+  <!-- ========== リンク定義 ========== -->
+
+  <!-- base_footprint: 地面投影フレーム -->
+  <link name="base_footprint"/>
+
+  <!-- base_link: ロボット本体中心 -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="chassis_color">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- laser_frame: LiDARスキャン面 -->
+  <link name="laser_frame">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${lidar_radius}" length="${lidar_height}"/>
+      </geometry>
+      <material name="lidar_color">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${lidar_radius}" length="${lidar_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ========== ジョイント定義 ========== -->
+
+  <!-- base_footprint → base_link -->
+  <joint name="base_footprint_to_base_link" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${base_link_height}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- base_link → laser_frame -->
+  <!--
+    LiDAR取り付け位置（実測値）:
+    - X: +3.5mm（前方）
+    - Y: -4.5mm（右方向）
+    - Z: 235mm（地面から）
+    - Yaw: +90deg（左方向に90度回転）
+
+    注意: laser_frameのZ値はbase_linkからの相対値
+    laser_z_from_base = lidar_z - base_link_height
+  -->
+  <joint name="base_link_to_laser" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_frame"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z - base_link_height}"
+            rpy="0 0 ${lidar_yaw}"/>
+  </joint>
+
+</robot>
