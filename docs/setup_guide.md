@@ -451,7 +451,189 @@ ros2 launch zeuscar_lidar lidar.launch.py serial_port:=/dev/ttyUSB0
 
 ## 5. TF（座標変換）の設定
 
-（作業実施後に手順を記載）
+### 5.1 TFとは
+
+TF（Transform）は、ROS 2における座標変換システムです。ロボットの各部品（ベース、センサなど）の相対位置を管理し、異なるフレーム間の座標変換を自動的に計算します。
+
+### 5.2 ZeusCar TFツリー構成
+
+本プロジェクトでは以下のTFツリーを構成します：
+
+```
+base_footprint（地面投影）
+  └── base_link（ロボット本体中心）
+        └── laser_frame（LiDARスキャン面）
+```
+
+各フレームの説明：
+
+| フレーム | 説明 |
+|----------|------|
+| base_footprint | ロボット位置を地面に投影したフレーム（z=0） |
+| base_link | ロボット本体の中心点 |
+| laser_frame | LiDARのスキャン平面（/scanデータの基準） |
+
+### 5.3 実測値に基づくTFパラメータ
+
+LiDAR取り付け位置の実測値：
+
+| パラメータ | 値 | 説明 |
+|------------|-----|------|
+| x | +0.0035m | ロボット中心から前方へ3.5mm |
+| y | -0.0045m | ロボット中心から右方向へ4.5mm |
+| z | +0.235m | 地面からLiDARセンサ中央まで235mm |
+| yaw | +1.5708 rad | 左方向に90度回転（+π/2） |
+
+### 5.4 リポジトリの更新
+
+最新のコードを取得します：
+
+```bash
+cd ~/zeuscar-ros2-jazzy-rpi
+git pull
+```
+
+### 5.5 zeuscar_descriptionパッケージのビルド
+
+URDFとTF設定を含むパッケージをビルドします：
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select zeuscar_description
+```
+
+成功すると以下のように表示されます：
+
+```
+Starting >>> zeuscar_description
+Finished <<< zeuscar_description [x.xs]
+
+Summary: 1 package finished [x.xs]
+```
+
+### 5.6 TFのパブリッシュ
+
+robot_state_publisherを起動してTFをパブリッシュします：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch zeuscar_description description.launch.py
+```
+
+正常に起動すると、以下のようなログが表示されます：
+
+```
+[robot_state_publisher-1] Parsing robot urdf xml string.
+[robot_state_publisher-1] Link base_footprint had 1 children
+[robot_state_publisher-1] Link base_link had 1 children
+[robot_state_publisher-1] Link laser_frame had 0 children
+```
+
+### 5.7 TFの確認
+
+#### TFツリーの確認
+
+別のターミナルで以下を実行し、TFツリーが正しく構成されているか確認します：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run tf2_tools view_frames
+```
+
+`frames.pdf`というファイルが生成され、TFツリーを可視化できます。
+
+#### 特定フレーム間の変換確認
+
+base_linkからlaser_frameへの変換を確認します：
+
+```bash
+ros2 run tf2_ros tf2_echo base_link laser_frame
+```
+
+出力例：
+
+```
+At time 0.0
+- Translation: [0.004, -0.005, 0.185]
+- Rotation: in Quaternion [0.000, 0.000, 0.707, 0.707]
+- Rotation: in RPY (radian) [0.000, 0.000, 1.571]
+- Rotation: in RPY (degree) [0.000, 0.000, 90.000]
+```
+
+### 5.8 LiDARと組み合わせた動作確認
+
+LiDARとTFを同時に起動して、正しく連携するか確認します：
+
+**ターミナル1: TFのパブリッシュ**
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch zeuscar_description description.launch.py
+```
+
+**ターミナル2: LiDARの起動**
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch zeuscar_lidar lidar.launch.py
+```
+
+**ターミナル3: トピックとTFの確認**
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# /scanトピックのフレームIDを確認
+ros2 topic echo /scan --field header.frame_id --once
+
+# TFが正しくパブリッシュされているか確認
+ros2 topic echo /tf_static --once
+```
+
+### 5.9 URDFファイルの構成
+
+`zeuscar_description/urdf/zeuscar.urdf.xacro`の主要部分：
+
+```xml
+<!-- ロボット本体寸法 -->
+<xacro:property name="body_length" value="0.163"/>  <!-- 163mm -->
+<xacro:property name="body_width" value="0.177"/>   <!-- 177mm -->
+
+<!-- LiDAR取り付け位置 -->
+<xacro:property name="lidar_x" value="0.0035"/>     <!-- +3.5mm -->
+<xacro:property name="lidar_y" value="-0.0045"/>    <!-- -4.5mm -->
+<xacro:property name="lidar_z" value="0.235"/>      <!-- 235mm -->
+<xacro:property name="lidar_yaw" value="1.5708"/>   <!-- +90° -->
+```
+
+寸法を変更する場合は、このファイルのプロパティ値を編集してリビルドしてください。
+
+### 5.10 トラブルシューティング
+
+#### TFが見つからない
+
+**症状**: `tf2_echo`で`Could not transform`エラーが発生する
+
+**解決策**:
+1. robot_state_publisherが起動しているか確認
+2. URDFファイルに構文エラーがないか確認
+
+```bash
+# URDFの構文チェック
+check_urdf <(xacro ~/ros2_ws/src/zeuscar_description/urdf/zeuscar.urdf.xacro)
+```
+
+#### LiDARのframe_idが一致しない
+
+**症状**: RVizでLiDARデータが表示されない
+
+**原因**: LiDARの`frame_id`とTFの`laser_frame`が一致していない
+
+**解決策**:
+```bash
+# LiDARのframe_idを確認
+ros2 topic echo /scan --field header.frame_id --once
+
+# 必要に応じてlaunchファイルのframe_idパラメータを修正
+```
 
 ---
 
@@ -523,3 +705,4 @@ ros2 run demo_nodes_cpp talker
 | 2026-01-12 | ワークスペース作成手順を追加 |
 | 2026-01-12 | トラブルシューティング追加（colcon、ros2 --version） |
 | 2026-01-12 | LiDARセットアップ手順を追加 |
+| 2026-01-19 | TF（座標変換）の設定手順を追加 |
