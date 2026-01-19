@@ -18,6 +18,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -34,6 +35,12 @@ def generate_launch_description():
         description='Use simulation clock if true'
     )
 
+    # xacroでURDFを生成
+    robot_description = ParameterValue(
+        Command(['xacro ', urdf_file]),
+        value_type=str
+    )
+
     # robot_state_publisher: URDFをパースしてTFをパブリッシュ
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -41,7 +48,7 @@ def generate_launch_description():
         name='robot_state_publisher',
         output='screen',
         parameters=[{
-            'robot_description': Command(['xacro ', urdf_file]),
+            'robot_description': robot_description,
             'use_sim_time': use_sim_time,
         }],
     )

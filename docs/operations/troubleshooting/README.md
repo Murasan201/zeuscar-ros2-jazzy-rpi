@@ -24,3 +24,4 @@
 | ID | ファイル名 | 概要 | ステータス |
 |---|---|---|---|
 | EPIC-001 | EPIC-001_ros2_environment.md | ROS 2環境構築時のエラー（リポジトリ設定、colcon、ros2コマンド） | 解決済 |
+| EPIC-003 | EPIC-003_tf_urdf.md | TF/URDF設計時のエラー（xacro未インストール、ParameterValue） | 解決済 |

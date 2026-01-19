@@ -68,9 +68,9 @@
 | STORY-003 | zeuscar_lidarパッケージ作成 | - | Done | - |
 | STORY-004 | LiDAR launchファイル作成 | - | Done | - |
 | STORY-005 | /scanトピック動作確認 | - | ToDo | ※ハードウェア接続待ち |
-| STORY-006 | zeuscar_descriptionパッケージ作成 | - | In Progress | EPIC-003 |
-| STORY-007 | URDF作成 | - | In Progress | EPIC-003 |
-| STORY-008 | TFツリー設計・実装 | - | In Progress | EPIC-003 |
+| STORY-006 | zeuscar_descriptionパッケージ作成 | - | Done | EPIC-003 |
+| STORY-007 | URDF作成 | - | Done | EPIC-003 |
+| STORY-008 | TFツリー設計・実装 | - | Done | EPIC-003 |
 
 #### 完了した作業
 
@@ -117,7 +117,7 @@
 4. **残タスク**
    - STORY-005: LiDARハードウェア接続後に動作確認
 
-**2026-01-19: EPIC-003 TF/URDF設計着手**
+**2026-01-19: EPIC-003 TF/URDF設計完了**
 
 1. **ロボット本体寸法の実測**
    - 全長（X軸方向）: 163mm
@@ -136,9 +136,23 @@
 4. **仕様書更新**
    - IR-001_epic003_robot_dimensions.md にすべての実測値を記録
 
-5. **次のステップ**
-   - WSL上でURDF/TFファイル作成（ROS 2不要の作業）
-   - 本番環境（Raspberry Pi）でビルド・検証
+5. **zeuscar_descriptionパッケージ作成**
+   - URDF（zeuscar.urdf.xacro）を作成
+   - description.launch.pyを作成
+   - xacroパッケージをインストール（ros-jazzy-xacro）
+   - ParameterValue問題を修正（ROS 2 Jazzy固有の対応）
+
+6. **ビルドと動作確認**
+   - colcon buildでzeuscar_descriptionをビルド
+   - robot_state_publisherが正常起動を確認
+   - /tf_staticトピックで正しいTF変換を確認
+     - base_footprint → base_link: z=0.05m
+     - base_link → laser_frame: x=0.0035m, y=-0.0045m, z=0.185m, yaw=90°
+
+7. **トラブルシューティング記録**
+   - EPIC-003_tf_urdf.md を作成
+   - TSB-003-001: xacroパッケージ未インストール
+   - TSB-003-002: robot_descriptionパラメータのYAMLパースエラー
 
 #### PMブリーフ管理
 
@@ -161,4 +175,4 @@
 | 2026-01-12 | - | 初版作成、プロジェクト初期化フェーズ記録 |
 | 2026-01-12 | - | スプリント1開始、EPIC-001完了記録 |
 | 2026-01-12 | - | EPIC-002 LiDAR統合進捗を記録 |
-| 2026-01-19 | - | EPIC-003 TF/URDF設計着手、寸法情報実測完了 |
+| 2026-01-19 | - | EPIC-003 TF/URDF設計完了（ビルド・検証含む） |

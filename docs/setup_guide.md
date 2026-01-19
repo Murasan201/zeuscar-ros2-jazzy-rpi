@@ -581,7 +581,24 @@ LiDAR取り付け位置の実測値：
 | z | +0.235m | 地面からLiDARセンサ中央まで235mm |
 | yaw | +1.5708 rad | 左方向に90度回転（+π/2） |
 
-### 5.5 リポジトリの更新
+### 5.5 xacroパッケージのインストール
+
+URDFファイル（.xacro形式）を処理するために、xacroパッケージをインストールします：
+
+```bash
+sudo apt install -y ros-jazzy-xacro
+```
+
+インストール確認：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+xacro --version
+```
+
+> **注意**: ros-jazzy-desktopにはxacroが含まれていないため、別途インストールが必要です。
+
+### 5.6 リポジトリの更新
 
 最新のコードを取得します：
 
@@ -590,7 +607,7 @@ cd ~/zeuscar-ros2-jazzy-rpi
 git pull
 ```
 
-### 5.6 zeuscar_descriptionパッケージのビルド
+### 5.7 zeuscar_descriptionパッケージのビルド
 
 URDFとTF設定を含むパッケージをビルドします：
 
@@ -609,7 +626,7 @@ Finished <<< zeuscar_description [x.xs]
 Summary: 1 package finished [x.xs]
 ```
 
-### 5.7 TFのパブリッシュ
+### 5.8 TFのパブリッシュ
 
 robot_state_publisherを起動してTFをパブリッシュします：
 
@@ -627,7 +644,7 @@ ros2 launch zeuscar_description description.launch.py
 [robot_state_publisher-1] Link laser_frame had 0 children
 ```
 
-### 5.8 TFの確認
+### 5.9 TFの確認
 
 #### TFツリーの確認
 
@@ -658,7 +675,7 @@ At time 0.0
 - Rotation: in RPY (degree) [0.000, 0.000, 90.000]
 ```
 
-### 5.9 LiDARと組み合わせた動作確認
+### 5.10 LiDARと組み合わせた動作確認
 
 LiDARとTFを同時に起動して、正しく連携するか確認します：
 
@@ -685,7 +702,7 @@ ros2 topic echo /scan --field header.frame_id --once
 ros2 topic echo /tf_static --once
 ```
 
-### 5.10 URDFファイルの構成
+### 5.11 URDFファイルの構成
 
 `zeuscar_description/urdf/zeuscar.urdf.xacro`の主要部分：
 
@@ -703,7 +720,7 @@ ros2 topic echo /tf_static --once
 
 寸法を変更する場合は、このファイルのプロパティ値を編集してリビルドしてください。
 
-### 5.11 トラブルシューティング
+### 5.12 トラブルシューティング
 
 #### TFが見つからない
 
@@ -790,6 +807,70 @@ ros2 topic list
 ros2 run demo_nodes_cpp talker
 ```
 
+### 8.4 xacroコマンドが見つからない
+
+**症状**: URDFファイルの構文チェック時に`xacro: command not found`エラーが発生する
+
+**原因**: ros-jazzy-desktopにはxacroパッケージが含まれていない
+
+**解決策**:
+```bash
+sudo apt install -y ros-jazzy-xacro
+```
+
+**確認方法**:
+```bash
+source /opt/ros/jazzy/setup.bash
+xacro --version
+```
+
+### 8.5 robot_descriptionパラメータのYAMLパースエラー
+
+**症状**: launchファイル実行時に以下のエラーが発生する
+```
+[ERROR] [launch]: Caught exception in launch (see debug for traceback): Unable to parse the value of parameter robot_description as yaml. If the parameter is meant to be a string, try wrapping it in launch_ros.parameter_descriptions.ParameterValue(value, value_type=str)
+```
+
+**原因**: ROS 2 Jazzy（Iron以降）では、`Command`サブスティチューションで生成した文字列をそのままパラメータに渡すと、YAMLとしてパースしようとしてエラーになる
+
+**解決策**:
+`ParameterValue`でラップし、`value_type=str`を指定する
+
+**修正前**:
+```python
+from launch.substitutions import Command
+
+robot_state_publisher = Node(
+    # ...
+    parameters=[{
+        'robot_description': Command(['xacro ', urdf_file]),
+    }],
+)
+```
+
+**修正後**:
+```python
+from launch.substitutions import Command
+from launch_ros.parameter_descriptions import ParameterValue
+
+robot_description = ParameterValue(
+    Command(['xacro ', urdf_file]),
+    value_type=str
+)
+
+robot_state_publisher = Node(
+    # ...
+    parameters=[{
+        'robot_description': robot_description,
+    }],
+)
+```
+
+**備考**:
+- ROS 2 Humble以前では不要だった対応
+- ROS 2 Jazzy（Iron以降）で必要になった変更
+- 公式ドキュメントでも推奨されている方法
+
 ---
 
 ## 更新履歴
@@ -804,3 +885,5 @@ ros2 run demo_nodes_cpp talker
 | 2026-01-12 | LiDARセットアップ手順を追加 |
 | 2026-01-19 | TF（座標変換）の設定手順を追加 |
 | 2026-01-19 | 実機の計測方法（Section 5.3）を追加 |
+| 2026-01-19 | xacroパッケージインストール手順を追加（Section 5.5） |
+| 2026-01-19 | トラブルシューティング追加（8.4 xacro、8.5 ParameterValue） |

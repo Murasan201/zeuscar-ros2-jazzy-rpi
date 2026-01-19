@@ -27,3 +27,12 @@
 - 環境構築作業は `docs/setup_guide.md` に記録する
 - 初心者にもわかりやすい説明を心がけること
 - 実施した全ての手順を漏れなく記載すること
+
+## Git操作
+
+- GitHubへのプッシュは `GITHUB_TOKEN` 環境変数を使用する
+- プッシュコマンド例:
+  ```bash
+  git push https://Murasan201:${GITHUB_TOKEN}@github.com/Murasan201/zeuscar-ros2-jazzy-rpi.git main
+  ```
+- `gh` CLI が利用可能な場合は `gh auth status` で認証状態を確認できる
