@@ -4,7 +4,7 @@
   <name>zeuscar_slam</name>
   <version>0.0.0</version>
   <description>ZeusCar SLAM configuration</description>
-  <maintainer email="shinf0330@gmail.com">pi</maintainer>
+  <maintainer email="maintainer@example.com">pi</maintainer>
   <license>TODO: License declaration</license>
 
   <test_depend>ament_copyright</test_depend>

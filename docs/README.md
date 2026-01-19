@@ -13,11 +13,6 @@
 - [agile_tdd_operating_rules.md](agile_tdd_operating_rules.md) - アジャイル・TDD運用ルール
 - [multi_agent_development_flow.md](multi_agent_development_flow.md) - マルチエージェント開発フロー
 
-## 実装ガイドライン
-
-- [python_coding_guidelines.md](python_coding_guidelines.md) - Pythonコーディングガイドライン
-- [COMMENT_STYLE_GUIDE.md](COMMENT_STYLE_GUIDE.md) - コメントスタイルガイド
-
 ## リソース
 
 - `images/` - 画像ファイル格納ディレクトリ

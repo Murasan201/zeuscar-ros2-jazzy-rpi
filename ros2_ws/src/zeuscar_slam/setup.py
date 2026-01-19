@@ -14,7 +14,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='pi',
-    maintainer_email='shinf0330@gmail.com',
+    maintainer_email='maintainer@example.com',
     description='ZeusCar SLAM configuration',
     license='TODO: License declaration',
     extras_require={

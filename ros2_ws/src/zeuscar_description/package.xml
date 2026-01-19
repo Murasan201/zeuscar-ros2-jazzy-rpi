@@ -4,7 +4,7 @@
   <name>zeuscar_description</name>
   <version>0.0.0</version>
   <description>ZeusCar URDF and TF definitions</description>
-  <maintainer email="shinf0330@gmail.com">pi</maintainer>
+  <maintainer email="maintainer@example.com">pi</maintainer>
   <license>TODO: License declaration</license>
 
   <!-- 実行時依存 -->
