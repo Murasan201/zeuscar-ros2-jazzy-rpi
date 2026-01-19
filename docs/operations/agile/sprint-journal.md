@@ -202,6 +202,70 @@
    - STORY-013: ディスプレイ接続後に表示確認
    - IMU（ICM42688）到着待ち（来週予定）
 
+---
+
+### 次回再開時のアクション
+
+#### 優先度: 高（IMU到着後）
+
+1. **ICM42688 IMUの統合**
+   - IMUをRaspberry Piに接続（I2CまたはSPI）
+   - ros2用IMUドライバのインストール・設定
+   - /imuトピックの動作確認
+
+2. **オドメトリの生成**
+   - robot_localizationパッケージのインストール
+   - IMUデータからオドメトリを生成
+   - odom → base_footprint TFの確認
+
+3. **SLAM動作確認（STORY-011）**
+   - LiDAR + TF + オドメトリを同時起動
+   - slam_toolboxでマッピング実行
+   - マップ保存の確認
+
+#### 優先度: 中（ディスプレイ接続時）
+
+4. **RViz表示確認（STORY-013）**
+   - ディスプレイ接続またはVNC設定
+   - `rviz2 -d zeuscar.rviz`で起動
+   - LaserScan/TF/RobotModel/Map表示確認
+
+#### 優先度: 低（将来対応）
+
+5. **ホイールオドメトリの統合**
+   - モーターエンコーダからオドメトリ計算
+   - IMU + ホイールオドメトリのセンサーフュージョン
+
+6. **統合launchファイル作成（STORY-014/015）**
+   - zeuscar_bringupに全ノード起動用launchファイル作成
+
+---
+
+### 現在の環境状態
+
+```
+インストール済みパッケージ:
+- ros-jazzy-desktop
+- ros-jazzy-rplidar-ros
+- ros-jazzy-xacro
+- ros-jazzy-slam-toolbox
+
+ビルド済みパッケージ:
+- zeuscar_bringup
+- zeuscar_description
+- zeuscar_lidar
+- zeuscar_slam
+
+動作確認済み:
+- LiDAR（/scanトピック）
+- TF（base_footprint → base_link → laser_frame）
+- robot_state_publisher
+
+未確認:
+- slam_toolbox（オドメトリ待ち）
+- RViz2（ディスプレイ待ち）
+```
+
 #### PMブリーフ管理
 
 | ID | 概要 | ステータス |
