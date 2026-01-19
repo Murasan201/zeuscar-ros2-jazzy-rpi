@@ -26,3 +26,5 @@
 | EPIC-001 | EPIC-001_ros2_environment.md | ROS 2環境構築時のエラー（リポジトリ設定、colcon、ros2コマンド） | 解決済 |
 | EPIC-002 | EPIC-002_lidar.md | LiDAR統合時のエラー（udevルール、デバイス権限） | 解決済 |
 | EPIC-003 | EPIC-003_tf_urdf.md | TF/URDF設計時のエラー（xacro未インストール、ParameterValue） | 解決済 |
+| EPIC-004 | EPIC-004_slam.md | SLAM構築時のエラー（オドメトリ、マップ生成） | 準備中 |
+| EPIC-005 | EPIC-005_visualization.md | 可視化時のエラー（RViz2、OpenGL、リモート接続） | 準備中 |

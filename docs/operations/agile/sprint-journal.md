@@ -71,6 +71,11 @@
 | STORY-006 | zeuscar_descriptionパッケージ作成 | - | Done | EPIC-003 |
 | STORY-007 | URDF作成 | - | Done | EPIC-003 |
 | STORY-008 | TFツリー設計・実装 | - | Done | EPIC-003 |
+| STORY-009 | zeuscar_slamパッケージ作成 | - | Done | EPIC-004 |
+| STORY-010 | slam_toolbox設定 | - | Done | EPIC-004 |
+| STORY-011 | マップ生成動作確認 | - | ToDo | ※オドメトリ統合待ち |
+| STORY-012 | RViz設定ファイル作成 | - | Done | EPIC-005 |
+| STORY-013 | LaserScan/TF/RobotModel表示確認 | - | ToDo | ※ディスプレイ接続待ち |
 
 #### 完了した作業
 
@@ -168,6 +173,35 @@
    - TSB-003-001: xacroパッケージ未インストール
    - TSB-003-002: robot_descriptionパラメータのYAMLパースエラー
 
+**2026-01-19: EPIC-004/EPIC-005 SLAM・可視化準備**
+
+1. **slam_toolboxインストール**
+   - ros-jazzy-slam-toolboxをインストール
+   - 依存パッケージ（Ceres Solver等）も自動インストール
+
+2. **zeuscar_slamパッケージ作成**
+   - slam_params.yaml設定ファイル作成（ZeusCar用にカスタマイズ）
+   - slam.launch.pyを作成
+   - setup.pyとpackage.xmlを更新
+
+3. **RViz設定ファイル作成**
+   - zeuscar_bringup/rviz/zeuscar.rviz作成
+   - Grid、RobotModel、TF、LaserScan、Map表示を設定
+   - setup.pyを更新してrvizディレクトリをインストール
+
+4. **ビルド確認**
+   - zeuscar_slam、zeuscar_bringupのビルド成功
+
+5. **ドキュメント整備**
+   - セットアップガイドにSection 6（SLAM）、Section 7（RViz）を追加
+   - トラブルシューティング 8.8-8.10を追加
+   - EPIC-004_slam.md、EPIC-005_visualization.mdを作成
+
+6. **残タスク**
+   - STORY-011: オドメトリ統合後にマップ生成確認
+   - STORY-013: ディスプレイ接続後に表示確認
+   - IMU（ICM42688）到着待ち（来週予定）
+
 #### PMブリーフ管理
 
 | ID | 概要 | ステータス |
@@ -191,3 +225,4 @@
 | 2026-01-12 | - | EPIC-002 LiDAR統合進捗を記録 |
 | 2026-01-19 | - | EPIC-003 TF/URDF設計完了（ビルド・検証含む） |
 | 2026-01-19 | - | EPIC-002 LiDAR統合完了（/scanトピック動作確認） |
+| 2026-01-19 | - | EPIC-004/005 SLAM・可視化準備（設定ファイル作成） |

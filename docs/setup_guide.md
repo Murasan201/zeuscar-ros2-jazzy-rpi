@@ -753,13 +753,165 @@ ros2 topic echo /scan --field header.frame_id --once
 
 ## 6. SLAMの設定
 
-（作業実施後に手順を記載）
+### 6.1 SLAMとは
+
+SLAM（Simultaneous Localization and Mapping）は、ロボットが移動しながら同時に地図を作成し、その地図上で自己位置を推定する技術です。本プロジェクトでは`slam_toolbox`を使用します。
+
+### 6.2 前提条件
+
+SLAMを動作させるには以下が必要です：
+
+| 要件 | 説明 | ステータス |
+|------|------|-----------|
+| LiDAR | /scanトピックがパブリッシュされている | ✅ 完了 |
+| TFツリー | base_footprint → base_link → laser_frame | ✅ 完了 |
+| オドメトリ | /odomトピックまたはTF（odom → base_footprint） | ⚠️ 未実装 |
+
+> **注意**: オドメトリソースがないと、slam_toolboxはスキャンマッチングのみで動作しますが、精度が低下します。IMU（ICM42688）とホイールオドメトリの統合後に本格的なテストを行ってください。
+
+### 6.3 slam_toolboxのインストール
+
+```bash
+sudo apt install -y ros-jazzy-slam-toolbox
+```
+
+インストール確認：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 pkg list | grep slam
+```
+
+出力例：
+```
+slam_toolbox
+```
+
+### 6.4 zeuscar_slamパッケージのビルド
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select zeuscar_slam
+```
+
+### 6.5 SLAM設定ファイル
+
+`zeuscar_slam/config/slam_params.yaml` に主要なパラメータが定義されています：
+
+| パラメータ | 値 | 説明 |
+|-----------|-----|------|
+| base_frame | base_footprint | ロボットのベースフレーム |
+| scan_topic | /scan | LiDARトピック |
+| resolution | 0.05 | マップ解像度（m/pixel） |
+| max_laser_range | 12.0 | LiDAR最大距離（m） |
+| mode | mapping | マッピングモード |
+
+### 6.6 SLAMの起動（オドメトリ統合後）
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# ターミナル1: TFをパブリッシュ
+ros2 launch zeuscar_description description.launch.py
+
+# ターミナル2: LiDARを起動
+ros2 launch zeuscar_lidar lidar.launch.py
+
+# ターミナル3: SLAMを起動
+ros2 launch zeuscar_slam slam.launch.py
+```
+
+### 6.7 マップの保存
+
+マッピング完了後、マップを保存します：
+
+```bash
+# nav2_map_serverをインストール（未インストールの場合）
+sudo apt install -y ros-jazzy-nav2-map-server
+
+# マップを保存
+ros2 run nav2_map_server map_saver_cli -f ~/maps/zeuscar_map
+```
+
+これにより、以下のファイルが生成されます：
+- `zeuscar_map.pgm` - マップ画像
+- `zeuscar_map.yaml` - マップメタデータ
 
 ---
 
 ## 7. RVizでの可視化
 
-（作業実施後に手順を記載）
+### 7.1 RViz2とは
+
+RViz2は、ROS 2の3D可視化ツールです。ロボットモデル、センサデータ、TFツリー、マップなどを視覚的に確認できます。
+
+### 7.2 前提条件
+
+- ディスプレイが接続されている、またはリモートデスクトップ（VNC等）が設定されている
+- ros-jazzy-desktopがインストールされている（RViz2含む）
+
+### 7.3 zeuscar_bringupパッケージのビルド
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select zeuscar_bringup
+```
+
+### 7.4 RViz2の起動
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# ZeusCar用の設定ファイルでRViz2を起動
+rviz2 -d ~/ros2_ws/install/zeuscar_bringup/share/zeuscar_bringup/rviz/zeuscar.rviz
+```
+
+### 7.5 表示項目
+
+ZeusCar用のRViz設定には以下の表示が含まれています：
+
+| 表示項目 | 説明 | トピック/フレーム |
+|----------|------|------------------|
+| Grid | グリッド線 | - |
+| RobotModel | ロボットモデル | /robot_description |
+| TF | 座標フレーム | TFツリー |
+| LaserScan | LiDARデータ | /scan |
+| Map | SLAMマップ | /map |
+
+### 7.6 リモートでの可視化
+
+Raspberry Piにディスプレイがない場合、以下の方法で可視化できます：
+
+**方法1: 別PCでRViz2を起動**
+
+```bash
+# 別PCで（同一ネットワーク内）
+export ROS_DOMAIN_ID=0  # Raspberry Piと同じドメインID
+source /opt/ros/jazzy/setup.bash
+rviz2
+```
+
+**方法2: VNCでリモートデスクトップ接続**
+
+```bash
+# Raspberry Piにx11vncをインストール
+sudo apt install -y x11vnc
+
+# VNCサーバーを起動
+x11vnc -display :0 -auth guess -forever -loop -noxdamage -rfbauth ~/.vnc/passwd -rfbport 5900
+```
+
+### 7.7 トラブルシューティング
+
+RViz2が起動しない場合：
+
+```bash
+# OpenGL関連のエラーの場合
+export LIBGL_ALWAYS_SOFTWARE=1
+rviz2
+```
 
 ---
 
@@ -938,6 +1090,61 @@ groups
 # dialout が含まれていればOK
 ```
 
+### 8.8 slam_toolboxが起動しない
+
+**症状**: SLAMを起動すると「TF変換が見つからない」エラーが発生する
+
+```
+[slam_toolbox]: Could not get transform from base_footprint to odom
+```
+
+**原因**: オドメトリソース（/odomトピックまたはodom→base_footprintのTF）がない
+
+**解決策**:
+- IMU（ICM42688等）とホイールオドメトリを統合する
+- または、robot_localizationパッケージでオドメトリを生成する
+
+**一時的な回避策**:
+slam_toolboxはスキャンマッチングのみでも動作しますが、精度が低下します。
+
+### 8.9 RViz2が起動しない（OpenGLエラー）
+
+**症状**: RViz2起動時にOpenGL関連のエラーが発生する
+
+```
+libGL error: failed to load driver: ...
+```
+
+**原因**: Raspberry PiのGPUドライバとRViz2の互換性問題
+
+**解決策**:
+ソフトウェアレンダリングを使用する：
+
+```bash
+export LIBGL_ALWAYS_SOFTWARE=1
+rviz2
+```
+
+永続化する場合は`~/.bashrc`に追加：
+
+```bash
+echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
+```
+
+### 8.10 RViz2でLaserScanが表示されない
+
+**症状**: RViz2を起動してもLiDARデータが表示されない
+
+**原因1**: Fixed Frameが正しく設定されていない
+
+**解決策1**:
+RViz2の「Global Options」→「Fixed Frame」を`map`または`base_footprint`に設定
+
+**原因2**: QoS設定の不一致
+
+**解決策2**:
+LaserScan表示の「Topic」→「Reliability Policy」を「Best Effort」に変更
+
 ---
 
 ## 更新履歴
@@ -955,3 +1162,6 @@ groups
 | 2026-01-19 | xacroパッケージインストール手順を追加（Section 5.5） |
 | 2026-01-19 | トラブルシューティング追加（8.4 xacro、8.5 ParameterValue） |
 | 2026-01-19 | トラブルシューティング追加（8.6 udevルール、8.7 LiDAR権限） |
+| 2026-01-19 | SLAM設定手順を追加（Section 6） |
+| 2026-01-19 | RViz可視化手順を追加（Section 7） |
+| 2026-01-19 | トラブルシューティング追加（8.8 slam_toolbox、8.9-8.10 RViz） |

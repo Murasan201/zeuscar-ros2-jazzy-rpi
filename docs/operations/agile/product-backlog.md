@@ -11,8 +11,8 @@
 | EPIC-001 | ROS 2環境構築 | Raspberry Pi上のROS 2 Jazzy環境を構築 | Done |
 | EPIC-002 | LiDAR統合 | RPLIDAR A1M8のROS 2統合 | Done |
 | EPIC-003 | TF/URDF設計 | ロボットのTFツリーとURDF定義 | Done |
-| EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | ToDo |
-| EPIC-005 | 可視化 | RVizによる可視化環境 | ToDo |
+| EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | In Progress |
+| EPIC-005 | 可視化 | RVizによる可視化環境 | In Progress |
 
 ---
 
@@ -45,16 +45,16 @@
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
 |---|---|---|---|---|---|
-| STORY-009 | zeuscar_slamパッケージ作成 | Medium | - | ToDo | - |
-| STORY-010 | slam_toolbox設定 | Medium | - | ToDo | - |
-| STORY-011 | マップ生成動作確認 | Medium | - | ToDo | - |
+| STORY-009 | zeuscar_slamパッケージ作成 | Medium | - | Done | - |
+| STORY-010 | slam_toolbox設定 | Medium | - | Done | - |
+| STORY-011 | マップ生成動作確認 | Medium | - | ToDo | ※オドメトリ統合待ち |
 
 ### EPIC-005: 可視化
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
 |---|---|---|---|---|---|
-| STORY-012 | RViz設定ファイル作成 | Medium | - | ToDo | - |
-| STORY-013 | LaserScan/TF/RobotModel表示確認 | Medium | - | ToDo | - |
+| STORY-012 | RViz設定ファイル作成 | Medium | - | Done | - |
+| STORY-013 | LaserScan/TF/RobotModel表示確認 | Medium | - | ToDo | ※ディスプレイ接続待ち |
 
 ### 統合・起動
 
@@ -82,3 +82,5 @@
 | 2026-01-12 | - | EPIC-002進行中、STORY-003/004を Done に更新 |
 | 2026-01-19 | - | EPIC-003完了、STORY-006/007/008を Done に更新 |
 | 2026-01-19 | - | EPIC-002完了、STORY-005を Done に更新 |
+| 2026-01-19 | - | EPIC-004進行中、STORY-009/010を Done に更新 |
+| 2026-01-19 | - | EPIC-005進行中、STORY-012を Done に更新 |
