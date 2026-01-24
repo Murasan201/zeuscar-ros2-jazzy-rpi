@@ -76,11 +76,11 @@
 | STORY-011 | マップ生成動作確認 | - | ToDo | ※オドメトリ統合待ち |
 | STORY-012 | RViz設定ファイル作成 | - | Done | EPIC-005 |
 | STORY-013 | LaserScan/TF/RobotModel表示確認 | - | ToDo | ※ディスプレイ接続待ち |
-| STORY-016 | zeuscar_motorパッケージ作成 | - | ToDo | EPIC-006 |
-| STORY-017 | motor_controller_node実装 | - | ToDo | EPIC-006 |
-| STORY-018 | cmd_vel対応 | - | ToDo | EPIC-006 |
-| STORY-019 | udevルール設定（Arduino） | - | ToDo | EPIC-006 |
-| STORY-020 | Arduino駆動系動作確認 | - | ToDo | EPIC-006 |
+| STORY-016 | zeuscar_motorパッケージ作成 | - | Done | EPIC-006 |
+| STORY-017 | motor_controller_node実装 | - | Done | EPIC-006 |
+| STORY-018 | cmd_vel対応 | - | Done | EPIC-006 |
+| STORY-019 | udevルール設定（Arduino） | - | Done | EPIC-006 |
+| STORY-020 | Arduino駆動系動作確認 | - | ToDo | ※実機テスト待ち |
 
 #### 完了した作業
 
@@ -234,60 +234,64 @@
    - CLAUDE.mdにreference/ディレクトリのルールを追加
    - .gitignoreにreference/を追加
 
+6. **zeuscar_motorパッケージ実装（STORY-016〜019）**
+   - zeuscar_motorパッケージ作成
+   - motor_controller_node.py実装
+     - /cmd_vel (geometry_msgs/Twist) 購読対応
+     - /zeuscar/motor_cmd (std_msgs/String) 購読対応
+     - Twist→コマンド変換ロジック実装
+     - タイムアウト機能（自動停止）
+   - 設定ファイル（motor_params.yaml）作成
+   - launchファイル（motor.launch.py）作成
+   - udevルール（99-arduino.rules）作成
+   - 単体テスト13件全てパス
+
+7. **ビルド確認**
+   - colcon buildでzeuscar_motorのビルド成功
+   - pytest全13テストケースがパス
+
 ---
 
 ### 次回再開時のアクション
 
-#### 優先度: 最高（Arduino駆動系）
+#### 優先度: 最高（実機テスト）
 
-1. **zeuscar_motorパッケージ作成（STORY-016）**
-   - パッケージ雛形作成
-   - 依存関係設定（pyserial等）
-
-2. **motor_controller_node実装（STORY-017）**
-   - シリアル通信実装
-   - /zeuscar/motor_cmdトピック購読
-
-3. **cmd_vel対応（STORY-018）**
-   - geometry_msgs/Twist→コマンド変換
-
-4. **udevルール設定（STORY-019）**
-   - /dev/arduino シンボリックリンク作成
-
-5. **動作確認（STORY-020）**
-   - 実機でのモーター制御テスト
+1. **Arduino駆動系動作確認（STORY-020）**
+   - Arduinoとの接続確認
+   - udevルールのインストール
+   - モーター制御テスト
 
 #### 優先度: 高（IMU到着後）
 
-6. **ICM42688 IMUの統合**
+2. **ICM42688 IMUの統合**
    - IMUをRaspberry Piに接続（I2CまたはSPI）
    - ros2用IMUドライバのインストール・設定
    - /imuトピックの動作確認
 
-2. **オドメトリの生成**
+3. **オドメトリの生成**
    - robot_localizationパッケージのインストール
    - IMUデータからオドメトリを生成
    - odom → base_footprint TFの確認
 
-3. **SLAM動作確認（STORY-011）**
+4. **SLAM動作確認（STORY-011）**
    - LiDAR + TF + オドメトリを同時起動
    - slam_toolboxでマッピング実行
    - マップ保存の確認
 
 #### 優先度: 中（ディスプレイ接続時）
 
-4. **RViz表示確認（STORY-013）**
+5. **RViz表示確認（STORY-013）**
    - ディスプレイ接続またはVNC設定
    - `rviz2 -d zeuscar.rviz`で起動
    - LaserScan/TF/RobotModel/Map表示確認
 
 #### 優先度: 低（将来対応）
 
-5. **ホイールオドメトリの統合**
+6. **ホイールオドメトリの統合**
    - モーターエンコーダからオドメトリ計算
    - IMU + ホイールオドメトリのセンサーフュージョン
 
-6. **統合launchファイル作成（STORY-014/015）**
+7. **統合launchファイル作成（STORY-014/015）**
    - zeuscar_bringupに全ノード起動用launchファイル作成
 
 ---
@@ -306,13 +310,16 @@
 - zeuscar_description
 - zeuscar_lidar
 - zeuscar_slam
+- zeuscar_motor（NEW: Arduino駆動系）
 
 動作確認済み:
 - LiDAR（/scanトピック）
 - TF（base_footprint → base_link → laser_frame）
 - robot_state_publisher
+- zeuscar_motor単体テスト（13件パス）
 
 未確認:
+- zeuscar_motor実機テスト（実機移動待ち）
 - slam_toolbox（オドメトリ待ち）
 - RViz2（ディスプレイ待ち）
 ```

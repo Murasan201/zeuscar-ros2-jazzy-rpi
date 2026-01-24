@@ -61,11 +61,11 @@
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
 |---|---|---|---|---|---|
-| STORY-016 | zeuscar_motorパッケージ作成 | High | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
-| STORY-017 | motor_controller_node実装 | High | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
-| STORY-018 | cmd_vel対応 | Medium | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
-| STORY-019 | udevルール設定（Arduino） | Medium | - | ToDo | - |
-| STORY-020 | Arduino駆動系動作確認 | High | - | ToDo | - |
+| STORY-016 | zeuscar_motorパッケージ作成 | High | - | Done | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-017 | motor_controller_node実装 | High | - | Done | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-018 | cmd_vel対応 | Medium | - | Done | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-019 | udevルール設定（Arduino） | Medium | - | Done | - |
+| STORY-020 | Arduino駆動系動作確認 | High | - | ToDo | ※実機テスト待ち |
 
 ### 統合・起動
 

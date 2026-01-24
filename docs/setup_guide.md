@@ -42,7 +42,8 @@
 5. [TF（座標変換）の設定](#5-tf座標変換の設定)
 6. [SLAMの設定](#6-slamの設定)
 7. [RVizでの可視化](#7-rvizでの可視化)
-8. [トラブルシューティング](#8-トラブルシューティング)
+8. [Arduino駆動系のセットアップ](#8-arduino駆動系のセットアップ)
+9. [トラブルシューティング](#9-トラブルシューティング)
 
 ---
 
@@ -915,9 +916,254 @@ rviz2
 
 ---
 
-## 8. トラブルシューティング
+## 8. Arduino駆動系のセットアップ
 
-### 8.1 ROS 2リポジトリの追加に失敗する
+### 8.1 概要
+
+ZeusCarは、Arduino Uno R3でモーターを制御しています。Raspberry Piからシリアル通信でArduinoにコマンドを送信し、4輪のメカナムホイールを操作します。
+
+#### システム構成
+
+```
+┌─────────────────┐      ROS 2 DDS      ┌─────────────────┐     Serial      ┌─────────────────┐
+│    Host PC      │ ◄────────────────► │  Raspberry Pi   │ ◄─────────────► │   Arduino Uno   │
+│ (Ubuntu 24.04)  │    /cmd_vel         │ (Ubuntu 24.04)  │  9600bps        │     R3          │
+│  ROS 2 Jazzy    │    Topic            │  ROS 2 Jazzy    │  ASCII + '\n'   │  Motor Control  │
+└─────────────────┘                     └─────────────────┘                 └─────────────────┘
+```
+
+#### メカナムホイールの動作
+
+| コマンド | 動作 | 説明 |
+|----------|------|------|
+| FORWARD | 前進 | 4輪全て同じ方向に回転 |
+| BACKWARD | 後退 | 前進の逆方向 |
+| LEFT | 左横移動 | メカナムホイール特有の動き |
+| RIGHT | 右横移動 | メカナムホイール特有の動き |
+| LEFTFORWARD | 左斜め前 | 対角線方向の移動 |
+| RIGHTFORWARD | 右斜め前 | 対角線方向の移動 |
+| LEFTBACKWARD | 左斜め後 | 対角線方向の移動 |
+| RIGHTBACKWARD | 右斜め後 | 対角線方向の移動 |
+| TURNLEFT | 左旋回 | その場で左回転 |
+| TURNRIGHT | 右旋回 | その場で右回転 |
+| STOP | 停止 | 全モーター停止 |
+
+### 8.2 前提条件
+
+- Arduinoにファームウェア（raspi-ctrl-v_2_00.ino）が書き込まれている
+- ArduinoとRaspberry PiがUSBケーブルで接続されている
+
+### 8.3 pyserialのインストール確認
+
+シリアル通信にはpyserialライブラリを使用します。通常はシステムにプリインストールされています。
+
+```bash
+python3 -c "import serial; print(f'pyserial version: {serial.__version__}')"
+```
+
+インストールされていない場合：
+
+```bash
+sudo apt install -y python3-serial
+```
+
+### 8.4 udevルールの設定
+
+ArduinoをRaspberry Piに接続した際、常に `/dev/arduino` としてアクセスできるようにudevルールを設定します。
+
+```bash
+# udevルールファイルをコピー
+sudo cp ~/ros2_ws/src/zeuscar_motor/udev/99-arduino.rules /etc/udev/rules.d/
+
+# ルールを再読み込み
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+#### Arduinoの接続確認
+
+```bash
+# デバイスの確認
+ls -la /dev/arduino
+```
+
+出力例：
+```
+lrwxrwxrwx 1 root root 7 Jan 24 12:00 /dev/arduino -> ttyACM0
+```
+
+シンボリックリンクが作成されていれば成功です。
+
+**リンクが作成されない場合**：
+ArduinoのUSBケーブルを一度抜いて再接続してみてください。
+
+### 8.5 zeuscar_motorパッケージのビルド
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select zeuscar_motor
+```
+
+成功すると以下のように表示されます：
+
+```
+Starting >>> zeuscar_motor
+Finished <<< zeuscar_motor [x.xs]
+
+Summary: 1 package finished [x.xs]
+```
+
+### 8.6 環境設定の更新
+
+新しいパッケージを認識させるため、環境を再読み込みします：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+```
+
+パッケージの確認：
+
+```bash
+ros2 pkg list | grep zeuscar_motor
+```
+
+### 8.7 モーターコントローラの起動
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# デフォルト設定で起動
+ros2 launch zeuscar_motor motor.launch.py
+```
+
+正常に起動すると、以下のようなログが表示されます：
+
+```
+[motor_controller_node]: MotorControllerNode started. Serial: /dev/ttyACM0 @ 9600bps
+[motor_controller_node]: Serial connection established: /dev/ttyACM0
+```
+
+#### シリアルポートを指定して起動
+
+```bash
+# 別のポートを使用する場合
+ros2 launch zeuscar_motor motor.launch.py serial_port:=/dev/arduino
+
+# ボーレートも指定する場合
+ros2 launch zeuscar_motor motor.launch.py serial_port:=/dev/arduino baud_rate:=9600
+```
+
+### 8.8 動作確認
+
+#### 方法1: 直接コマンドトピックを使用
+
+別のターミナルで以下を実行して、直接コマンドを送信します：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# 前進コマンドを送信
+ros2 topic pub --once /zeuscar/motor_cmd std_msgs/msg/String "{data: 'FORWARD'}"
+
+# 停止コマンドを送信
+ros2 topic pub --once /zeuscar/motor_cmd std_msgs/msg/String "{data: 'STOP'}"
+```
+
+#### 方法2: cmd_velトピックを使用
+
+ROS 2標準の速度指令トピックを使用することもできます：
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# 前進（linear.x = 0.5）
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+
+# 左旋回（angular.z = 0.5）
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.5}}"
+
+# 停止
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
+#### 方法3: キーボードで操作（teleop_twist_keyboard）
+
+キーボードでロボットを操作できるパッケージを使用します：
+
+```bash
+# teleop_twist_keyboardのインストール（未インストールの場合）
+sudo apt install -y ros-jazzy-teleop-twist-keyboard
+
+# 起動
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+キー操作：
+- `i`: 前進
+- `,`: 後退
+- `j`: 左旋回
+- `l`: 右旋回
+- `k`: 停止
+
+### 8.9 トピックとパラメータ
+
+#### サブスクライブトピック
+
+| トピック名 | 型 | 説明 |
+|-----------|-----|------|
+| /cmd_vel | geometry_msgs/msg/Twist | ROS 2標準の速度指令 |
+| /zeuscar/motor_cmd | std_msgs/msg/String | 直接コマンド（FORWARD等） |
+
+#### パラメータ
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| serial_port | /dev/ttyACM0 | Arduinoシリアルポート |
+| baud_rate | 9600 | ボーレート |
+| cmd_vel_timeout | 0.5 | タイムアウト秒（コマンド未受信時に自動停止） |
+| linear_threshold | 0.1 | 速度閾値（これ以下は0として扱う） |
+| angular_threshold | 0.1 | 角速度閾値（これ以下は0として扱う） |
+
+### 8.10 cmd_velからコマンドへの変換
+
+`/cmd_vel`トピック（geometry_msgs/msg/Twist）は以下のルールでArduinoコマンドに変換されます：
+
+| linear.x | linear.y | angular.z | コマンド |
+|----------|----------|-----------|----------|
+| > 0 | 0 | 0 | FORWARD |
+| < 0 | 0 | 0 | BACKWARD |
+| 0 | > 0 | 0 | LEFT |
+| 0 | < 0 | 0 | RIGHT |
+| > 0 | > 0 | 0 | LEFTFORWARD |
+| > 0 | < 0 | 0 | RIGHTFORWARD |
+| < 0 | > 0 | 0 | LEFTBACKWARD |
+| < 0 | < 0 | 0 | RIGHTBACKWARD |
+| - | - | > 0 | TURNLEFT |
+| - | - | < 0 | TURNRIGHT |
+| 0 | 0 | 0 | STOP |
+
+> **注意**: angular.z（旋回）が0でない場合、旋回コマンドが優先されます。
+
+### 8.11 安全機能
+
+#### タイムアウト自動停止
+
+`cmd_vel_timeout`秒間コマンドを受信しない場合、自動的にSTOPコマンドが送信されます。これにより、通信断時にロボットが暴走することを防ぎます。
+
+デフォルト: 0.5秒
+
+#### シリアル接続断時の挙動
+
+シリアル接続が切断された場合：
+- 警告ログが出力されます
+- 再接続は自動では行われません（ノードの再起動が必要）
+
+---
+
+## 9. トラブルシューティング
+
+### 9.1 ROS 2リポジトリの追加に失敗する
 
 **症状**: `sudo apt update` でROS 2のパッケージが取得できない
 
@@ -932,7 +1178,7 @@ cat /etc/apt/sources.list.d/ros2.list
 echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/ros2.list
 ```
 
-### 8.2 colconコマンドが見つからない
+### 9.2 colconコマンドが見つからない
 
 **症状**: `colcon build`を実行すると`colcon: command not found`エラーが表示される
 
@@ -943,7 +1189,7 @@ echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] htt
 sudo apt install -y python3-colcon-common-extensions
 ```
 
-### 8.3 ros2 --versionが動作しない
+### 9.3 ros2 --versionが動作しない
 
 **症状**: `ros2 --version`を実行してもバージョンが表示されない
 
@@ -959,7 +1205,7 @@ ros2 topic list
 ros2 run demo_nodes_cpp talker
 ```
 
-### 8.4 xacroコマンドが見つからない
+### 9.4 xacroコマンドが見つからない
 
 **症状**: URDFファイルの構文チェック時に`xacro: command not found`エラーが発生する
 
@@ -976,7 +1222,7 @@ source /opt/ros/jazzy/setup.bash
 xacro --version
 ```
 
-### 8.5 robot_descriptionパラメータのYAMLパースエラー
+### 9.5 robot_descriptionパラメータのYAMLパースエラー
 
 **症状**: launchファイル実行時に以下のエラーが発生する
 ```
@@ -1023,7 +1269,7 @@ robot_state_publisher = Node(
 - ROS 2 Jazzy（Iron以降）で必要になった変更
 - 公式ドキュメントでも推奨されている方法
 
-### 8.6 /dev/rplidarシンボリックリンクが作成されない
+### 9.6 /dev/rplidarシンボリックリンクが作成されない
 
 **症状**: LiDARを接続しても`/dev/rplidar`が作成されない
 
@@ -1057,7 +1303,7 @@ sudo udevadm trigger --action=add /dev/ttyUSB0
 
 または、LiDARのUSBケーブルを一度抜いて再接続する。
 
-### 8.7 LiDARデバイスの権限エラー
+### 9.7 LiDARデバイスの権限エラー
 
 **症状**: LiDAR起動時に権限エラーが発生する
 
@@ -1090,7 +1336,7 @@ groups
 # dialout が含まれていればOK
 ```
 
-### 8.8 slam_toolboxが起動しない
+### 9.8 slam_toolboxが起動しない
 
 **症状**: SLAMを起動すると「TF変換が見つからない」エラーが発生する
 
@@ -1107,7 +1353,7 @@ groups
 **一時的な回避策**:
 slam_toolboxはスキャンマッチングのみでも動作しますが、精度が低下します。
 
-### 8.9 RViz2が起動しない（OpenGLエラー）
+### 9.9 RViz2が起動しない（OpenGLエラー）
 
 **症状**: RViz2起動時にOpenGL関連のエラーが発生する
 
@@ -1131,7 +1377,7 @@ rviz2
 echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
 ```
 
-### 8.10 RViz2でLaserScanが表示されない
+### 9.10 RViz2でLaserScanが表示されない
 
 **症状**: RViz2を起動してもLiDARデータが表示されない
 
@@ -1144,6 +1390,108 @@ RViz2の「Global Options」→「Fixed Frame」を`map`または`base_footprint
 
 **解決策2**:
 LaserScan表示の「Topic」→「Reliability Policy」を「Best Effort」に変更
+
+### 9.11 Arduinoシリアルポートが見つからない
+
+**症状**: motor_controller_node起動時にシリアルポートエラーが発生する
+
+```
+[motor_controller_node]: Failed to open serial port: [Errno 2] No such file or directory: '/dev/ttyACM0'
+```
+
+**原因1**: Arduinoが接続されていない
+
+**解決策1**:
+ArduinoがUSBケーブルでRaspberry Piに接続されていることを確認
+
+**原因2**: シリアルポートのパスが異なる
+
+**解決策2**:
+```bash
+# 接続されているシリアルデバイスを確認
+ls -la /dev/ttyACM* /dev/ttyUSB* 2>/dev/null
+
+# 正しいポートを指定して起動
+ros2 launch zeuscar_motor motor.launch.py serial_port:=/dev/ttyACM0
+```
+
+**原因3**: udevルールが設定されていない
+
+**解決策3**:
+```bash
+# udevルールをインストール
+sudo cp ~/ros2_ws/src/zeuscar_motor/udev/99-arduino.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# Arduinoを再接続後、シンボリックリンクを確認
+ls -la /dev/arduino
+```
+
+### 9.12 Arduinoシリアルポートの権限エラー
+
+**症状**: シリアルポートへのアクセスが拒否される
+
+```
+[motor_controller_node]: Failed to open serial port: [Errno 13] Permission denied: '/dev/ttyACM0'
+```
+
+**原因**: ユーザーがシリアルポートへのアクセス権限を持っていない
+
+**解決策1**: udevルールでMODE="0666"を設定（推奨）
+```bash
+# 99-arduino.rulesにMODE="0666"が含まれていることを確認
+cat /etc/udev/rules.d/99-arduino.rules
+```
+
+**解決策2**: ユーザーをdialoutグループに追加
+```bash
+sudo usermod -aG dialout $USER
+# ログアウト・ログインが必要
+```
+
+### 9.13 Arduinoがコマンドに反応しない
+
+**症状**: コマンドを送信してもモーターが動かない
+
+**確認手順**:
+
+1. **シリアル接続の確認**
+```bash
+# motor_controller_nodeのログを確認
+# "Serial connection established" が表示されているか確認
+```
+
+2. **コマンド送信の確認**
+```bash
+# トピックにメッセージが届いているか確認
+ros2 topic echo /zeuscar/motor_cmd
+# 別ターミナルでコマンド送信
+ros2 topic pub --once /zeuscar/motor_cmd std_msgs/msg/String "{data: 'FORWARD'}"
+```
+
+3. **Arduinoのシリアルモニタで確認**
+   - Arduino IDEのシリアルモニタを9600bpsで開く
+   - 手動で「FORWARD」と入力し、Arduinoが反応するか確認
+
+**原因1**: Arduinoにファームウェアが書き込まれていない
+
+**解決策1**:
+Arduino IDEで`raspi-ctrl-v_2_00.ino`を開いて書き込み
+
+**原因2**: ボーレートが一致していない
+
+**解決策2**:
+```bash
+# Arduinoのファームウェアは9600bpsで設定されている
+ros2 launch zeuscar_motor motor.launch.py baud_rate:=9600
+```
+
+**原因3**: 電源不足
+
+**解決策3**:
+- Arduinoに外部電源を供給
+- USBハブを使用している場合は、セルフパワーハブを使用
 
 ---
 
@@ -1165,3 +1513,5 @@ LaserScan表示の「Topic」→「Reliability Policy」を「Best Effort」に�
 | 2026-01-19 | SLAM設定手順を追加（Section 6） |
 | 2026-01-19 | RViz可視化手順を追加（Section 7） |
 | 2026-01-19 | トラブルシューティング追加（8.8 slam_toolbox、8.9-8.10 RViz） |
+| 2026-01-24 | Arduino駆動系セットアップ手順を追加（Section 8） |
+| 2026-01-24 | トラブルシューティング追加（9.11-9.13 Arduino関連） |

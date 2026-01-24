@@ -1,0 +1,14 @@
+# ZeusCar モーターコントローラ設定
+motor_controller_node:
+  ros__parameters:
+    # シリアルポート設定
+    serial_port: "/dev/ttyACM0"
+    baud_rate: 9600
+
+    # タイムアウト設定（秒）
+    # この時間コマンドを受信しないと自動停止
+    cmd_vel_timeout: 0.5
+
+    # 速度閾値（この値以下は0として扱う）
+    linear_threshold: 0.1
+    angular_threshold: 0.1
