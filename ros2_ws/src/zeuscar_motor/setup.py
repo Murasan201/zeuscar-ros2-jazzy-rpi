@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'motor_controller_node = zeuscar_motor.motor_controller_node:main',
+            'motor_test_node = zeuscar_motor.motor_test_node:main',
         ],
     },
 )
