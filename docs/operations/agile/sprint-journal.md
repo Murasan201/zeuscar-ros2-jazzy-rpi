@@ -80,7 +80,7 @@
 | STORY-017 | motor_controller_node実装 | - | Done | EPIC-006 |
 | STORY-018 | cmd_vel対応 | - | Done | EPIC-006 |
 | STORY-019 | udevルール設定（Arduino） | - | Done | EPIC-006 |
-| STORY-020 | Arduino駆動系動作確認 | - | ToDo | ※実機テスト待ち |
+| STORY-020 | Arduino駆動系動作確認 | - | Done | EPIC-006 |
 
 #### 完了した作業
 
@@ -250,16 +250,25 @@
    - colcon buildでzeuscar_motorのビルド成功
    - pytest全13テストケースがパス
 
+**2026-01-24: EPIC-006 Arduino駆動系統合完了**
+
+1. **motor_test_node追加**
+   - 全方向モーターテストノードを実装
+   - 10方向すべてを順番にテスト
+   - duration/pauseパラメータで調整可能
+
+2. **udevルールインストール**
+   - 99-arduino.rulesを/etc/udev/rules.d/にコピー
+   - /dev/arduinoシンボリックリンクを確認
+
+3. **実機テスト完了（STORY-020）**
+   - motor_controller_nodeを起動
+   - motor_test_nodeで全方向テスト実行
+   - 前進、後退、左右移動、斜め移動、旋回すべて動作確認
+
 ---
 
 ### 次回再開時のアクション
-
-#### 優先度: 最高（実機テスト）
-
-1. **Arduino駆動系動作確認（STORY-020）**
-   - Arduinoとの接続確認
-   - udevルールのインストール
-   - モーター制御テスト
 
 #### 優先度: 高（IMU到着後）
 
@@ -317,9 +326,9 @@
 - TF（base_footprint → base_link → laser_frame）
 - robot_state_publisher
 - zeuscar_motor単体テスト（13件パス）
+- zeuscar_motor実機テスト（全10方向動作確認済み）
 
 未確認:
-- zeuscar_motor実機テスト（実機移動待ち）
 - slam_toolbox（オドメトリ待ち）
 - RViz2（ディスプレイ待ち）
 ```
@@ -349,3 +358,4 @@
 | 2026-01-19 | - | EPIC-002 LiDAR統合完了（/scanトピック動作確認） |
 | 2026-01-19 | - | EPIC-004/005 SLAM・可視化準備（設定ファイル作成） |
 | 2026-01-24 | - | EPIC-006 Arduino駆動系統合開始（仕様書作成） |
+| 2026-01-24 | - | EPIC-006 Arduino駆動系統合完了（実機テスト成功） |
