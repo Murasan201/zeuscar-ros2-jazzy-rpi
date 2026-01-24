@@ -76,6 +76,11 @@
 | STORY-011 | マップ生成動作確認 | - | ToDo | ※オドメトリ統合待ち |
 | STORY-012 | RViz設定ファイル作成 | - | Done | EPIC-005 |
 | STORY-013 | LaserScan/TF/RobotModel表示確認 | - | ToDo | ※ディスプレイ接続待ち |
+| STORY-016 | zeuscar_motorパッケージ作成 | - | ToDo | EPIC-006 |
+| STORY-017 | motor_controller_node実装 | - | ToDo | EPIC-006 |
+| STORY-018 | cmd_vel対応 | - | ToDo | EPIC-006 |
+| STORY-019 | udevルール設定（Arduino） | - | ToDo | EPIC-006 |
+| STORY-020 | Arduino駆動系動作確認 | - | ToDo | EPIC-006 |
 
 #### 完了した作業
 
@@ -202,13 +207,59 @@
    - STORY-013: ディスプレイ接続後に表示確認
    - IMU（ICM42688）到着待ち（来週予定）
 
+**2026-01-24: EPIC-006 Arduino駆動系統合開始**
+
+1. **参照実装の調査**
+   - reference/zeuscar-project/を分析
+   - Arduino側ファームウェア（raspi-ctrl-v_2_00.ino）の仕様確認
+   - Raspberry Pi側subscriber.pyの仕様確認
+   - PC側publisher.pyの仕様確認
+
+2. **通信プロトコル確認**
+   - シリアル通信: 9600bps, ASCII + 改行区切り
+   - サポートコマンド: FORWARD, BACKWARD, LEFT, RIGHT等11種類
+   - メカナムホイール4輪構成
+
+3. **仕様書作成**
+   - docs/operations/specs/EPIC-006_arduino_interface.md 作成
+   - ROS 2インタフェース設計（/cmd_vel, /zeuscar/motor_cmd）
+   - パラメータ設計（serial_port, baud_rate, timeout等）
+   - 参照実装からの改善点を定義
+
+4. **バックログ更新**
+   - EPIC-006追加
+   - STORY-016〜020を登録
+
+5. **ルールファイル更新**
+   - CLAUDE.mdにreference/ディレクトリのルールを追加
+   - .gitignoreにreference/を追加
+
 ---
 
 ### 次回再開時のアクション
 
+#### 優先度: 最高（Arduino駆動系）
+
+1. **zeuscar_motorパッケージ作成（STORY-016）**
+   - パッケージ雛形作成
+   - 依存関係設定（pyserial等）
+
+2. **motor_controller_node実装（STORY-017）**
+   - シリアル通信実装
+   - /zeuscar/motor_cmdトピック購読
+
+3. **cmd_vel対応（STORY-018）**
+   - geometry_msgs/Twist→コマンド変換
+
+4. **udevルール設定（STORY-019）**
+   - /dev/arduino シンボリックリンク作成
+
+5. **動作確認（STORY-020）**
+   - 実機でのモーター制御テスト
+
 #### 優先度: 高（IMU到着後）
 
-1. **ICM42688 IMUの統合**
+6. **ICM42688 IMUの統合**
    - IMUをRaspberry Piに接続（I2CまたはSPI）
    - ros2用IMUドライバのインストール・設定
    - /imuトピックの動作確認
@@ -290,3 +341,4 @@
 | 2026-01-19 | - | EPIC-003 TF/URDF設計完了（ビルド・検証含む） |
 | 2026-01-19 | - | EPIC-002 LiDAR統合完了（/scanトピック動作確認） |
 | 2026-01-19 | - | EPIC-004/005 SLAM・可視化準備（設定ファイル作成） |
+| 2026-01-24 | - | EPIC-006 Arduino駆動系統合開始（仕様書作成） |

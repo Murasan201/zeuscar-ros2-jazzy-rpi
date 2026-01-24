@@ -35,6 +35,7 @@
 ### 仕様・設計 (operations/specs/)
 
 - [specs/README.md](operations/specs/README.md) - 仕様書ガイド
+- [specs/EPIC-006_arduino_interface.md](operations/specs/EPIC-006_arduino_interface.md) - Arduino通信インタフェース仕様書
 
 ### エスカレーション (operations/pm-briefs/)
 

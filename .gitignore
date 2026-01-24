@@ -17,3 +17,6 @@ __pycache__/
 
 # Serena MCP
 .serena/
+
+# Reference files (read-only, not tracked)
+reference/

@@ -13,6 +13,7 @@
 | EPIC-003 | TF/URDF設計 | ロボットのTFツリーとURDF定義 | Done |
 | EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | In Progress |
 | EPIC-005 | 可視化 | RVizによる可視化環境 | In Progress |
+| EPIC-006 | Arduino駆動系統合 | Raspberry Pi-Arduino間の通信インタフェース | In Progress |
 
 ---
 
@@ -56,6 +57,16 @@
 | STORY-012 | RViz設定ファイル作成 | Medium | - | Done | - |
 | STORY-013 | LaserScan/TF/RobotModel表示確認 | Medium | - | ToDo | ※ディスプレイ接続待ち |
 
+### EPIC-006: Arduino駆動系統合
+
+| ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
+|---|---|---|---|---|---|
+| STORY-016 | zeuscar_motorパッケージ作成 | High | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-017 | motor_controller_node実装 | High | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-018 | cmd_vel対応 | Medium | - | ToDo | [EPIC-006_arduino_interface.md](../specs/EPIC-006_arduino_interface.md) |
+| STORY-019 | udevルール設定（Arduino） | Medium | - | ToDo | - |
+| STORY-020 | Arduino駆動系動作確認 | High | - | ToDo | - |
+
 ### 統合・起動
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
@@ -84,3 +95,4 @@
 | 2026-01-19 | - | EPIC-002完了、STORY-005を Done に更新 |
 | 2026-01-19 | - | EPIC-004進行中、STORY-009/010を Done に更新 |
 | 2026-01-19 | - | EPIC-005進行中、STORY-012を Done に更新 |
+| 2026-01-24 | - | EPIC-006追加、STORY-016〜020を登録 |
