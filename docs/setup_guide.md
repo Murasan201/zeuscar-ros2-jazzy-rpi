@@ -59,7 +59,8 @@ Raspberry Pi 4にUbuntu 24.04 LTS（Noble Numbat）をインストールしま�
    - 公式サイト（https://www.raspberrypi.com/software/）からダウンロード
 
 2. **OSを選択**
-   - 「Other general-purpose OS」→「Ubuntu」→「Ubuntu Desktop 24.04 LTS (64-bit)」を選択
+   - 「Other general-purpose OS」→「Ubuntu」→「Ubuntu Desktop 24.04.3 LTS (64-bit)」を選択
+   - ※バージョン番号（24.04.x）は時期により異なる場合があります
 
 3. **SDカードに書き込み**
    - microSDカードを選択し、「Write」をクリック
