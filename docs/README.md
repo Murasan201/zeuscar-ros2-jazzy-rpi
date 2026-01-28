@@ -18,6 +18,10 @@
 - [python_coding_guidelines.md](python_coding_guidelines.md) - Pythonコーディングガイドライン
 - [COMMENT_STYLE_GUIDE.md](COMMENT_STYLE_GUIDE.md) - コメントスタイルガイド
 
+## ハードウェア仕様
+
+- [hardware/icm42688_imu_sensor.md](hardware/icm42688_imu_sensor.md) - ICM-42688 IMUセンサー仕様書（配線図・動作確認テスト手順含む）
+
 ## リソース
 
 - `images/` - 画像ファイル格納ディレクトリ

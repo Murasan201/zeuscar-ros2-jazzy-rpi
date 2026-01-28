@@ -20,3 +20,6 @@ __pycache__/
 
 # Reference files (read-only, not tracked)
 reference/
+
+# Image files (no copyright, not tracked)
+image/
