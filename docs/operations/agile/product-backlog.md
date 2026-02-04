@@ -14,6 +14,7 @@
 | EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | In Progress |
 | EPIC-005 | 可視化 | RVizによる可視化環境 | In Progress |
 | EPIC-006 | Arduino駆動系統合 | Raspberry Pi-Arduino間の通信インタフェース | Done |
+| EPIC-007 | IMU統合 | ICM-42688 6軸IMUのROS 2統合 | In Progress |
 
 ---
 
@@ -67,6 +68,16 @@
 | STORY-019 | udevルール設定（Arduino） | Medium | - | Done | - |
 | STORY-020 | Arduino駆動系動作確認 | High | - | Done | - |
 
+### EPIC-007: IMU統合
+
+| ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
+|---|---|---|---|---|---|
+| STORY-021 | zeuscar_imuパッケージ作成 | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
+| STORY-022 | IMUドライバ実装（ICM-42688） | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
+| STORY-023 | IMUテストノード実装 | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
+| STORY-024 | IMU動作確認 | High | - | Done | - |
+| STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | ToDo | - |
+
 ### 統合・起動
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
@@ -97,3 +108,6 @@
 | 2026-01-19 | - | EPIC-005進行中、STORY-012を Done に更新 |
 | 2026-01-24 | - | EPIC-006追加、STORY-016〜020を登録 |
 | 2026-01-24 | - | EPIC-006完了、STORY-020を Done に更新 |
+| 2026-02-03 | - | EPIC-007追加、STORY-021〜025を登録 |
+| 2026-02-03 | - | STORY-021/022を Done、STORY-023/024を In Progress に更新 |
+| 2026-02-04 | - | STORY-023/024を Done に更新（IMUテスト2回目全項目合格） |

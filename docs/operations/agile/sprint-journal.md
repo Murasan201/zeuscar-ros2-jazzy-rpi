@@ -81,6 +81,10 @@
 | STORY-018 | cmd_vel対応 | - | Done | EPIC-006 |
 | STORY-019 | udevルール設定（Arduino） | - | Done | EPIC-006 |
 | STORY-020 | Arduino駆動系動作確認 | - | Done | EPIC-006 |
+| STORY-021 | zeuscar_imuパッケージ作成 | - | Done | [EPIC-007](journals/EPIC-007.md) |
+| STORY-022 | IMUドライバ実装（ICM-42688） | - | Done | [EPIC-007](journals/EPIC-007.md) |
+| STORY-023 | IMUテストノード実装 | - | Done | [EPIC-007](journals/EPIC-007.md) |
+| STORY-024 | IMU動作確認 | - | Done | [EPIC-007](journals/EPIC-007.md) |
 
 #### 完了した作業
 
@@ -266,6 +270,54 @@
    - motor_test_nodeで全方向テスト実行
    - 前進、後退、左右移動、斜め移動、旋回すべて動作確認
 
+**2026-02-03: EPIC-007 IMU統合開始**
+
+1. **環境セットアップ**
+   - i2c-toolsインストール
+   - python3-pipインストール
+   - smbus2ライブラリインストール（PEP 668対応: `--break-system-packages`）
+   - I2Cデバイス確認（0x68で検出）
+
+2. **zeuscar_imuパッケージビルド**
+   - colcon buildでビルド成功
+
+3. **IMUテスト実行（1回目）**
+   - 時刻: 21:15:45
+   - 結果: 部分的成功
+   - WHO_AM_I = 0x47（正常）
+   - ジャイロスコープ: 正常動作（左旋回+5.76dps、右旋回-7.33dps）
+   - 加速度X軸: 正常動作（前進+0.028g、後退-0.014g）
+   - **問題検出**: 加速度Z軸が期待値の約1/8（0.126g vs 1.0g）
+
+4. **問題分析と修正**
+   - 原因: ACCEL_SCALEが±2g用（16384）だが、レジスタ設定は±16g
+   - 修正: ACCEL_SCALE = 2048.0（±16g用）に変更
+   - パッケージ再ビルド完了
+
+5. **IMUテスト実行（2回目）**
+   - 状態: バッテリー切れにより中断
+   - 次回: バッテリー充電後に再実行予定
+
+6. **ドキュメント整備**
+   - docs/setup_guide.md - Section 9（IMUセットアップ）追加
+   - docs/setup_guide.md - Section 10.14-10.18（IMUトラブルシューティング）追加
+   - docs/operations/troubleshooting/IMU_test_report_20260203_211545.md作成
+   - docs/operations/agile/journals/EPIC-007.md作成
+   - docs/operations/agile/product-backlog.md - EPIC-007追加
+
+**2026-02-04: EPIC-007 IMUテスト2回目完了（全項目合格）**
+
+1. **IMUテスト実行（2回目）**
+   - バッテリー充電後に再実行
+   - 結果: **全項目合格**
+   - 静止状態: accel_z = +1.009g（期待: +1.0g）→ スケールファクター修正成功
+   - 前進: accel_x = +0.094g、後退: accel_x = -0.076g → 加速度検出正常
+   - 左旋回: gyro_z = +7.42dps、右旋回: gyro_z = -10.21dps → ジャイロ検出正常
+
+2. **バックログ更新**
+   - STORY-023（IMUテストノード実装）→ Done
+   - STORY-024（IMU動作確認）→ Done
+
 ---
 
 ### 次回再開時のアクション
@@ -313,13 +365,17 @@
 - ros-jazzy-rplidar-ros
 - ros-jazzy-xacro
 - ros-jazzy-slam-toolbox
+- i2c-tools
+- python3-pip
+- smbus2（pip）
 
 ビルド済みパッケージ:
 - zeuscar_bringup
 - zeuscar_description
 - zeuscar_lidar
 - zeuscar_slam
-- zeuscar_motor（NEW: Arduino駆動系）
+- zeuscar_motor（Arduino駆動系）
+- zeuscar_imu（NEW: IMU統合）
 
 動作確認済み:
 - LiDAR（/scanトピック）
@@ -327,6 +383,13 @@
 - robot_state_publisher
 - zeuscar_motor単体テスト（13件パス）
 - zeuscar_motor実機テスト（全10方向動作確認済み）
+- IMU検出（WHO_AM_I = 0x47）
+- IMUジャイロスコープ（旋回検出OK）
+- IMU加速度X軸（前進/後退検出OK）
+- IMU加速度Z軸（+1.009g、スケールファクター修正後に正常動作確認）
+
+確認中:
+（なし）
 
 未確認:
 - slam_toolbox（オドメトリ待ち）
@@ -359,3 +422,5 @@
 | 2026-01-19 | - | EPIC-004/005 SLAM・可視化準備（設定ファイル作成） |
 | 2026-01-24 | - | EPIC-006 Arduino駆動系統合開始（仕様書作成） |
 | 2026-01-24 | - | EPIC-006 Arduino駆動系統合完了（実機テスト成功） |
+| 2026-02-03 | - | EPIC-007 IMU統合開始（テスト1回目、スケールファクター問題検出・修正） |
+| 2026-02-04 | - | EPIC-007 IMUテスト2回目完了（全項目合格、STORY-023/024 Done） |

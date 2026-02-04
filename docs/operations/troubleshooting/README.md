@@ -29,3 +29,4 @@
 | EPIC-004 | EPIC-004_slam.md | SLAM構築時のエラー（オドメトリ、マップ生成） | 準備中 |
 | EPIC-005 | EPIC-005_visualization.md | 可視化時のエラー（RViz2、OpenGL、リモート接続） | 準備中 |
 | GENERAL | GENERAL_ssh_connection.md | SSH接続エラー（ホストキー未登録、SSH鍵未設定） | 解決済 |
+| IMU | IMU_test_report_20260203_211545.md | IMUテストレポート（加速度スケールファクター不一致） | 要修正 |

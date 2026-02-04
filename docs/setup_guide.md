@@ -43,7 +43,8 @@
 6. [SLAMの設定](#6-slamの設定)
 7. [RVizでの可視化](#7-rvizでの可視化)
 8. [Arduino駆動系のセットアップ](#8-arduino駆動系のセットアップ)
-9. [トラブルシューティング](#9-トラブルシューティング)
+9. [IMU（慣性計測ユニット）のセットアップ](#9-imu慣性計測ユニットのセットアップ)
+10. [トラブルシューティング](#10-トラブルシューティング)
 
 ---
 
@@ -1162,9 +1163,213 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 
 ---
 
-## 9. トラブルシューティング
+## 9. IMU（慣性計測ユニット）のセットアップ
 
-### 9.1 ROS 2リポジトリの追加に失敗する
+### 9.1 概要
+
+ZeusCarには6軸IMU（ICM-42688）が搭載されています。IMUは加速度とジャイロスコープのデータを提供し、オドメトリの精度向上やSLAMの改善に役立ちます。
+
+詳細なハードウェア仕様については、[ICM-42688 IMUセンサー仕様書](hardware/icm42688_imu_sensor.md)を参照してください。
+
+### 9.2 ハードウェア仕様
+
+| 項目 | 仕様 |
+|------|------|
+| センサーチップ | ICM-42688（TDK/InvenSense製） |
+| センサータイプ | 6軸IMU（3軸ジャイロ + 3軸加速度計） |
+| インターフェース | I2C（アドレス: 0x68） |
+| 動作電圧 | 3.3V |
+
+### 9.3 I2Cの有効化
+
+Raspberry PiでI2Cを有効にする必要があります。
+
+```bash
+# raspi-configでI2Cを有効化
+sudo raspi-config
+```
+
+メニューから以下を選択：
+1. `Interface Options`
+2. `I2C`
+3. `Yes`（有効化）
+4. `Finish`
+
+変更を反映するため、再起動が必要な場合があります：
+
+```bash
+sudo reboot
+```
+
+### 9.4 I2Cツールのインストール
+
+```bash
+sudo apt install -y i2c-tools
+```
+
+### 9.5 IMUの接続確認
+
+IMUがI2Cバスに正しく接続されているか確認します：
+
+```bash
+sudo i2cdetect -y 1
+```
+
+期待される出力（0x68にデバイスが表示される）：
+
+```
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- --
+```
+
+`68`が表示されていればIMUが正しく認識されています。
+
+### 9.6 smbus2ライブラリのインストール
+
+PythonからI2Cデバイスにアクセスするためのライブラリをインストールします。
+
+#### pip3のインストール
+
+Ubuntu 24.04ではpipがデフォルトでインストールされていないため、まずpip3をインストールします：
+
+```bash
+sudo apt install -y python3-pip
+```
+
+#### smbus2のインストール
+
+Ubuntu 24.04ではPEP 668により、システムワイドのpipインストールが制限されています。`--break-system-packages`オプションを使用します：
+
+```bash
+pip3 install --break-system-packages smbus2
+```
+
+> **注意**: `--break-system-packages`オプションを使用すると、システムのPython環境に直接インストールされます。ROS 2環境ではこの方法が一般的に使用されます。
+
+インストール確認：
+
+```bash
+python3 -c "import smbus2; print('smbus2 OK')"
+```
+
+### 9.7 zeuscar_imuパッケージのビルド
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select zeuscar_imu
+```
+
+成功すると以下のように表示されます：
+
+```
+Starting >>> zeuscar_imu
+Finished <<< zeuscar_imu [x.xs]
+
+Summary: 1 package finished [x.xs]
+```
+
+### 9.8 環境設定の更新
+
+```bash
+source ~/ros2_ws/install/setup.bash
+```
+
+パッケージの確認：
+
+```bash
+ros2 pkg list | grep zeuscar_imu
+```
+
+### 9.9 IMUテストの実行
+
+IMUが正常に動作するか確認するため、テストノードを実行します。
+
+> **警告**: このテストではロボットが動きます。周囲の安全を確認してください。
+
+**ターミナル1: モーターコントローラを起動**
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run zeuscar_motor motor_controller_node
+```
+
+**ターミナル2: IMUテストを実行**
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run zeuscar_imu imu_test_node
+```
+
+または、launchファイルを使用：
+
+```bash
+ros2 launch zeuscar_imu imu_test.launch.py
+```
+
+### 9.10 テストシーケンス
+
+テストノードは以下のシーケンスを自動実行します：
+
+| 順序 | 動作 | 時間 | 確認項目 |
+|------|------|------|----------|
+| 1 | 静止 | 2.0秒 | 基準値取得（accel_z ≈ +1.0g） |
+| 2 | 前進 | 0.3秒 | accel_x の変化 |
+| 3 | 後退 | 0.3秒 | accel_x の変化（逆方向） |
+| 4 | 左旋回 | 0.3秒 | gyro_z > 0 |
+| 5 | 右旋回 | 0.3秒 | gyro_z < 0 |
+
+### 9.11 出力例
+
+```
+[INFO] [imu_test_node]: === IMUセンサー動作確認テスト ===
+[INFO] [imu_test_node]: I2Cバス: 1, アドレス: 0x68
+[INFO] [imu_test_node]: WHO_AM_I: 0x47 (期待値: 0x47)
+[INFO] [imu_test_node]: ICM-42688を検出しました
+[INFO] [imu_test_node]: IMUを初期化しました
+
+[INFO] [imu_test_node]: === テスト開始 ===
+[INFO] [imu_test_node]: ※ロボットが動きます。周囲に注意してください。
+
+[INFO] [imu_test_node]: --- 静止状態（基準値取得） (STOP, 2.0秒) ---
+[INFO] [imu_test_node]: 静止状態（基準値取得） (サンプル数: 20):
+  加速度平均 [g]: X=+0.012, Y=-0.008, Z=+0.998
+  角速度平均 [dps]: X=+0.15, Y=-0.22, Z=+0.08
+...
+[INFO] [imu_test_node]: === テスト完了 ===
+```
+
+### 9.12 判定基準
+
+| 項目 | 正常値 | 異常時の確認事項 |
+|------|--------|------------------|
+| WHO_AM_I | 0x47 | 配線確認、I2Cアドレス確認 |
+| 静止時 accel_z | +0.95〜+1.05 g | センサー取り付け向き確認 |
+| 静止時 gyro | ±5 dps 以内 | センサー初期化確認 |
+| 前進時 accel_x | 正の変化 | モーター動作確認 |
+| 左旋回時 gyro_z | 正の値 | センサー軸方向確認 |
+| 右旋回時 gyro_z | 負の値 | センサー軸方向確認 |
+
+### 9.13 パラメータ
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `i2c_bus` | 1 | I2Cバス番号 |
+| `i2c_address` | 0x68 | I2Cアドレス |
+| `sample_rate_hz` | 10.0 | サンプリングレート (Hz) |
+
+---
+
+## 10. トラブルシューティング
+
+### 10.1 ROS 2リポジトリの追加に失敗する
 
 **症状**: `sudo apt update` でROS 2のパッケージが取得できない
 
@@ -1179,7 +1384,7 @@ cat /etc/apt/sources.list.d/ros2.list
 echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/ros2.list
 ```
 
-### 9.2 colconコマンドが見つからない
+### 10.2 colconコマンドが見つからない
 
 **症状**: `colcon build`を実行すると`colcon: command not found`エラーが表示される
 
@@ -1190,7 +1395,7 @@ echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] htt
 sudo apt install -y python3-colcon-common-extensions
 ```
 
-### 9.3 ros2 --versionが動作しない
+### 10.3 ros2 --versionが動作しない
 
 **症状**: `ros2 --version`を実行してもバージョンが表示されない
 
@@ -1206,7 +1411,7 @@ ros2 topic list
 ros2 run demo_nodes_cpp talker
 ```
 
-### 9.4 xacroコマンドが見つからない
+### 10.4 xacroコマンドが見つからない
 
 **症状**: URDFファイルの構文チェック時に`xacro: command not found`エラーが発生する
 
@@ -1223,7 +1428,7 @@ source /opt/ros/jazzy/setup.bash
 xacro --version
 ```
 
-### 9.5 robot_descriptionパラメータのYAMLパースエラー
+### 10.5 robot_descriptionパラメータのYAMLパースエラー
 
 **症状**: launchファイル実行時に以下のエラーが発生する
 ```
@@ -1270,7 +1475,7 @@ robot_state_publisher = Node(
 - ROS 2 Jazzy（Iron以降）で必要になった変更
 - 公式ドキュメントでも推奨されている方法
 
-### 9.6 /dev/rplidarシンボリックリンクが作成されない
+### 10.6 /dev/rplidarシンボリックリンクが作成されない
 
 **症状**: LiDARを接続しても`/dev/rplidar`が作成されない
 
@@ -1304,7 +1509,7 @@ sudo udevadm trigger --action=add /dev/ttyUSB0
 
 または、LiDARのUSBケーブルを一度抜いて再接続する。
 
-### 9.7 LiDARデバイスの権限エラー
+### 10.7 LiDARデバイスの権限エラー
 
 **症状**: LiDAR起動時に権限エラーが発生する
 
@@ -1337,7 +1542,7 @@ groups
 # dialout が含まれていればOK
 ```
 
-### 9.8 slam_toolboxが起動しない
+### 10.8 slam_toolboxが起動しない
 
 **症状**: SLAMを起動すると「TF変換が見つからない」エラーが発生する
 
@@ -1354,7 +1559,7 @@ groups
 **一時的な回避策**:
 slam_toolboxはスキャンマッチングのみでも動作しますが、精度が低下します。
 
-### 9.9 RViz2が起動しない（OpenGLエラー）
+### 10.9 RViz2が起動しない（OpenGLエラー）
 
 **症状**: RViz2起動時にOpenGL関連のエラーが発生する
 
@@ -1378,7 +1583,7 @@ rviz2
 echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
 ```
 
-### 9.10 RViz2でLaserScanが表示されない
+### 10.10 RViz2でLaserScanが表示されない
 
 **症状**: RViz2を起動してもLiDARデータが表示されない
 
@@ -1392,7 +1597,7 @@ RViz2の「Global Options」→「Fixed Frame」を`map`または`base_footprint
 **解決策2**:
 LaserScan表示の「Topic」→「Reliability Policy」を「Best Effort」に変更
 
-### 9.11 Arduinoシリアルポートが見つからない
+### 10.11 Arduinoシリアルポートが見つからない
 
 **症状**: motor_controller_node起動時にシリアルポートエラーが発生する
 
@@ -1429,7 +1634,7 @@ sudo udevadm trigger
 ls -la /dev/arduino
 ```
 
-### 9.12 Arduinoシリアルポートの権限エラー
+### 10.12 Arduinoシリアルポートの権限エラー
 
 **症状**: シリアルポートへのアクセスが拒否される
 
@@ -1451,7 +1656,7 @@ sudo usermod -aG dialout $USER
 # ログアウト・ログインが必要
 ```
 
-### 9.13 Arduinoがコマンドに反応しない
+### 10.13 Arduinoがコマンドに反応しない
 
 **症状**: コマンドを送信してもモーターが動かない
 
@@ -1494,6 +1699,180 @@ ros2 launch zeuscar_motor motor.launch.py baud_rate:=9600
 - Arduinoに外部電源を供給
 - USBハブを使用している場合は、セルフパワーハブを使用
 
+### 10.14 IMU（ICM-42688）が検出されない
+
+**症状**: `i2cdetect -y 1`で0x68にデバイスが表示されない
+
+**原因1**: I2Cが有効化されていない
+
+**解決策1**:
+```bash
+sudo raspi-config
+# Interface Options → I2C → Yes を選択
+sudo reboot
+```
+
+**原因2**: 配線が正しくない
+
+**解決策2**:
+以下の配線を確認してください：
+
+| IMUピン | Raspberry Pi |
+|---------|--------------|
+| VCC | 3.3V (Pin 1) |
+| GND | GND (Pin 9) |
+| SDA | GPIO2/SDA1 (Pin 3) |
+| SCL | GPIO3/SCL1 (Pin 5) |
+| SAO | GND (Pin 9) |
+| CS | 3.3V (Pin 1) |
+
+**原因3**: I2Cアドレスが異なる
+
+**解決策3**:
+SAOピンの接続先を確認してください：
+- SAO → GND: アドレス 0x68
+- SAO → 3.3V: アドレス 0x69
+
+### 10.15 smbus2ライブラリがインストールできない
+
+**症状1**: `pip`または`pip3`コマンドが見つからない
+
+```
+pip: コマンドが見つかりません
+```
+
+**原因**: Ubuntu 24.04ではpipがデフォルトでインストールされていない
+
+**解決策**:
+```bash
+sudo apt install -y python3-pip
+```
+
+---
+
+**症状2**: `externally-managed-environment`エラーが発生する
+
+```
+error: externally-managed-environment
+
+× This environment is externally managed
+```
+
+**原因**: Ubuntu 24.04ではPEP 668により、システムPython環境への直接インストールが制限されている
+
+**解決策（推奨）**:
+```bash
+# --break-system-packagesオプションを使用
+pip3 install --break-system-packages smbus2
+```
+
+**代替解決策（仮想環境を使用）**:
+```bash
+# 仮想環境を作成
+python3 -m venv ~/ros2_venv
+source ~/ros2_venv/bin/activate
+pip install smbus2
+
+# 注意: 仮想環境を使う場合、ROS 2のノード実行前に
+# 毎回 source ~/ros2_venv/bin/activate が必要
+```
+
+---
+
+**症状3**: 権限エラーが発生する
+
+**解決策**:
+```bash
+# ユーザーインストールを試す
+pip3 install --break-system-packages --user smbus2
+```
+
+### 10.16 IMU WHO_AM_I値が0x47でない
+
+**症状**: WHO_AM_Iが0xFFや0x00など予期しない値を返す
+
+**原因1**: 通信エラー
+
+**解決策1**:
+```bash
+# I2C通信速度を下げる（/boot/firmware/config.txtに追加）
+dtparam=i2c_baudrate=50000
+# 再起動後に確認
+sudo reboot
+```
+
+**原因2**: 電源供給の問題
+
+**解決策2**:
+- VCCとGNDの配線を確認
+- 3.3V電源が正しく供給されているか確認
+
+### 10.17 IMUテストノードでモーターが動かない
+
+**症状**: IMUテスト中にロボットが動かない
+
+**原因**: モーターコントローラノードが起動していない
+
+**解決策**:
+```bash
+# 別ターミナルでモーターコントローラを起動
+ros2 run zeuscar_motor motor_controller_node
+
+# その後、IMUテストを実行
+ros2 run zeuscar_imu imu_test_node
+```
+
+**確認方法**:
+```bash
+# トピックが存在するか確認
+ros2 topic list | grep motor_cmd
+```
+
+### 10.18 IMU加速度Z軸の値が期待値の約1/8になる
+
+**症状**: 静止状態でaccel_zが約0.12g（期待値: +1.0g）
+
+**原因**: センサー初期化時のフルスケール設定とスケールファクターの不一致
+
+現在のコード（`imu_test_node.py`）:
+```python
+# レジスタ設定: ±16gフルスケール
+self._bus.write_byte_data(self.i2c_address, self.REG_ACCEL_CONFIG0, 0x06)
+
+# スケールファクター: ±2g用（誤り）
+ACCEL_SCALE = 16384.0
+```
+
+**問題の詳細**:
+- `ACCEL_CONFIG0 = 0x06` → Bits 7:5 = 000 → ±16g設定
+- ±16gの正しいスケールファクター: 2048 LSB/g
+- ±2gのスケールファクター: 16384 LSB/g（現在の設定）
+- 比率: 16384 / 2048 = 8（値が1/8になる原因）
+
+**解決策1（推奨）**: スケールファクターを修正
+```python
+# ±16g設定に合わせて変更
+ACCEL_SCALE = 2048.0  # ±16g設定時: 2048 LSB/g
+```
+
+**解決策2**: レジスタ設定を±2gに変更
+```python
+# ACCEL_CONFIG0を±2g, 1kHzに設定
+# 0x66 = 0b01100110 (FS_SEL=011 → ±2g, ODR=0110 → 1kHz)
+self._bus.write_byte_data(self.i2c_address, self.REG_ACCEL_CONFIG0, 0x66)
+```
+
+**ICM-42688 ACCEL_FS_SEL設定値**:
+
+| FS_SEL (Bits 7:5) | フルスケール | スケールファクター |
+|-------------------|--------------|-------------------|
+| 000 | ±16g | 2048 LSB/g |
+| 001 | ±8g | 4096 LSB/g |
+| 010 | ±4g | 8192 LSB/g |
+| 011 | ±2g | 16384 LSB/g |
+
+**関連テストレポート**: [IMU_test_report_20260203_211545.md](troubleshooting/IMU_test_report_20260203_211545.md)
+
 ---
 
 ## 更新履歴
@@ -1515,4 +1894,9 @@ ros2 launch zeuscar_motor motor.launch.py baud_rate:=9600
 | 2026-01-19 | RViz可視化手順を追加（Section 7） |
 | 2026-01-19 | トラブルシューティング追加（8.8 slam_toolbox、8.9-8.10 RViz） |
 | 2026-01-24 | Arduino駆動系セットアップ手順を追加（Section 8） |
-| 2026-01-24 | トラブルシューティング追加（9.11-9.13 Arduino関連） |
+| 2026-01-24 | トラブルシューティング追加（10.11-10.13 Arduino関連） |
+| 2026-02-03 | IMU（ICM-42688）セットアップ手順を追加（Section 9） |
+| 2026-02-03 | トラブルシューティング追加（10.14-10.17 IMU関連） |
+| 2026-02-03 | Section 9.6 pip3インストール手順とPEP 668対応を追記 |
+| 2026-02-03 | 10.15 PEP 668エラー・pipコマンド未インストール対応を追記 |
+| 2026-02-03 | 10.18 IMU加速度スケールファクター不一致の問題と解決策を追記 |

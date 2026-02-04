@@ -39,7 +39,9 @@ class ICM42688:
     WHO_AM_I_VALUE = 0x47
 
     # スケールファクター（デフォルト設定）
-    ACCEL_SCALE = 16384.0  # ±2g設定時: 16384 LSB/g
+    # 注意: ACCEL_CONFIG0=0x06 はFS_SEL=000(±16g)を設定するため、
+    #       スケールファクターは2048 LSB/gを使用する
+    ACCEL_SCALE = 2048.0   # ±16g設定時: 2048 LSB/g
     GYRO_SCALE = 131.0     # ±250dps設定時: 131 LSB/dps
 
     def __init__(self, bus: int = 1, address: int = 0x68):
