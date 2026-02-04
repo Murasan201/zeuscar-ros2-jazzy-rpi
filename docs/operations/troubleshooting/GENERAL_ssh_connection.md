@@ -104,3 +104,103 @@ ssh-copy-id zeus@192.168.11.12
 - 発生日: 2026-02-03
 - 環境: Windows 11 + WSL2 (Ubuntu) → Raspberry Pi 4 (Ubuntu 24.04)
 - 解決方法: TeraTerm で SSH 鍵を設定
+
+---
+
+# SSH接続トラブルシューティング（2回目: IPアドレス競合）
+
+## 問題の概要
+
+Windows PC (WSL2 / TeraTerm) から Raspberry Pi (192.168.11.12) への SSH 接続が失敗する。TeraTerm では「ホストに接続できませんでした」のダイアログで接続不可。
+
+## 発生状況・再現手順
+
+1. Windows PC の WSL2 環境から `ssh zeus@192.168.11.12` を実行 → Connection timed out
+2. TeraTerm から 192.168.11.12 に接続 → 「ホストに接続できませんでした」
+3. Raspberry Pi 側では正常に起動しており、SSH サービス（ポート22）も稼働中
+
+## 調査ログ
+
+### 1. ネットワーク疎通確認
+
+```bash
+ping -c 3 192.168.11.12
+```
+
+結果: **応答あり**だが **TTL=128**（Linux の標準は TTL=64、TTL=128 は Windows デバイスの値）
+
+### 2. SSH接続の詳細ログ確認
+
+```bash
+ssh -v -o ConnectTimeout=5 zeus@192.168.11.12 exit 2>&1
+```
+
+結果: `connect to address 192.168.11.12 port 22: Connection timed out`
+
+### 3. SSHポート確認
+
+```bash
+nc -zv -w5 192.168.11.12 22
+```
+
+結果: タイムアウト（ポート22に到達不可）
+
+### 4. ARPテーブル確認（Windows側）
+
+```
+192.168.11.12    e8-4e-06-a5-cd-f5    動的
+```
+
+### 5. Raspberry Pi側のMACアドレス確認
+
+```
+d8:3a:dd:20:a9:35（Raspberry Pi Trading Ltd）
+```
+
+### 6. ネットワーク全体スキャン
+
+192.168.11.1〜254 をスキャンしたが、SSHポート22が開いているホストは 0 台。Raspberry Pi の MAC アドレス `d8:3a:dd:*` を持つデバイスが見つからなかった。
+
+## 原因
+
+### IPアドレス競合
+
+`192.168.11.12` を2台のデバイスが同時に使用していた。
+
+| デバイス | MACアドレス | TTL |
+|---------|------------|-----|
+| Raspberry Pi（本物） | `d8:3a:dd:20:a9:35` | 64 |
+| 別のデバイス（Windows機） | `e8:4e:06:a5:cd:f5` | 128 |
+
+Windows PC からの通信が別のデバイス（Windows 機）に到達してしまい、Raspberry Pi には届かなかった。
+
+### 判別ポイント
+
+- **TTL値**: ping の TTL=128 は Windows デバイスの応答。Linux（Raspberry Pi）なら TTL=64
+- **MACアドレス不一致**: ARP テーブルの MAC が Raspberry Pi のものと異なる
+
+## 対処方法
+
+Raspberry Pi の IP アドレスを競合しない固定 IP に変更した。
+
+- **変更前**: `192.168.11.12`（DHCP / 競合あり）
+- **変更後**: `192.168.11.20`（固定IP）
+
+変更後、Windows PC (WSL2 / TeraTerm) から `192.168.11.20` への SSH 接続が正常に成功。
+
+## 再発防止策
+
+1. Raspberry Pi には**固定IPアドレスを設定**し、DHCP による IP 変動・競合を防ぐ
+2. ルーター（Buffalo）の DHCP 範囲と固定 IP が重複しないように管理する
+3. SSH 接続不可時は **TTL値** と **MACアドレス** を確認し、正しいデバイスに到達しているか検証する
+
+## 現在の接続情報
+
+- Raspberry Pi IP: **192.168.11.20**
+- SSH 接続コマンド: `ssh zeus@192.168.11.20`
+
+## 関連情報
+
+- 発生日: 2026-02-04
+- 環境: Windows 11 + WSL2 (Ubuntu) → Raspberry Pi 4 (Ubuntu 24.04)
+- 解決方法: Raspberry Pi の固定 IP を `192.168.11.20` に変更
