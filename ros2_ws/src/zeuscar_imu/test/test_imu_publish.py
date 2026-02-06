@@ -1,4 +1,4 @@
-"""IMUデータパブリッシュノードのテスト（Redフェーズ）.
+"""IMUデータパブリッシュノードのテスト.
 
 テスト対象:
 - 単位変換関数（dps→rad/s, g→m/s²）
@@ -10,66 +10,13 @@ import math
 
 import pytest
 
-
-# === 定数（仕様値） ===
-GRAVITY = 9.80665
-DEG_TO_RAD = math.pi / 180.0
-
-
-# === テスト対象関数（Greenフェーズで imu_publish_node.py に移動予定） ===
-
-def dps_to_rad_s(dps: float) -> float:
-    """角速度をdpsからrad/sに変換する."""
-    return dps * DEG_TO_RAD
-
-
-def g_to_m_s2(g: float) -> float:
-    """加速度をgからm/s²に変換する."""
-    return g * GRAVITY
-
-
-def create_imu_msg(
-    scaled_data: dict,
-    frame_id: str = 'imu_link',
-    angular_velocity_stdev: float = 0.01,
-    linear_acceleration_stdev: float = 0.05,
-    stamp=None,
-):
-    """IMUデータからImuメッセージ相当の辞書を構築する.
-
-    Greenフェーズでsensor_msgs.msg.Imuを使用する実装に置き換え予定。
-    Redフェーズでは辞書で代用してロジックをテストする。
-    """
-    angular_var = angular_velocity_stdev ** 2
-    linear_var = linear_acceleration_stdev ** 2
-
-    return {
-        'frame_id': frame_id,
-        'orientation': [0.0, 0.0, 0.0, 0.0],
-        'orientation_covariance': [-1.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0],
-        'angular_velocity': {
-            'x': dps_to_rad_s(scaled_data['gyro_x']),
-            'y': dps_to_rad_s(scaled_data['gyro_y']),
-            'z': dps_to_rad_s(scaled_data['gyro_z']),
-        },
-        'angular_velocity_covariance': [
-            angular_var, 0.0, 0.0,
-            0.0, angular_var, 0.0,
-            0.0, 0.0, angular_var,
-        ],
-        'linear_acceleration': {
-            'x': g_to_m_s2(scaled_data['accel_x']),
-            'y': g_to_m_s2(scaled_data['accel_y']),
-            'z': g_to_m_s2(scaled_data['accel_z']),
-        },
-        'linear_acceleration_covariance': [
-            linear_var, 0.0, 0.0,
-            0.0, linear_var, 0.0,
-            0.0, 0.0, linear_var,
-        ],
-    }
+from zeuscar_imu.imu_publish_node import (
+    GRAVITY,
+    DEG_TO_RAD,
+    create_imu_msg,
+    dps_to_rad_s,
+    g_to_m_s2,
+)
 
 
 # === モッククラス ===

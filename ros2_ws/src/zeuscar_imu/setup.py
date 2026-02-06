@@ -29,6 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'imu_test_node = zeuscar_imu.imu_test_node:main',
+            'imu_node = zeuscar_imu.imu_publish_node:main',
         ],
     },
 )
