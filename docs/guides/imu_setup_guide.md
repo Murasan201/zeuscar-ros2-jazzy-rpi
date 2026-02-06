@@ -571,9 +571,9 @@ python3 -c "import smbus2; print('smbus2 OK')"
 
 ## 7. 関連ドキュメント
 
-- [ICM-42688 IMUセンサー仕様書](hardware/icm42688_imu_sensor.md) - ハードウェアの詳細仕様、ピン配置、座標系の情報
-- [STORY-025 仕様書](operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノードの設計仕様
-- [セットアップガイド](setup_guide.md) - Section 9: IMU セットアップの概要手順
+- [ICM-42688 IMUセンサー仕様書](../hardware/icm42688_imu_sensor.md) - ハードウェアの詳細仕様、ピン配置、座標系の情報
+- [STORY-025 仕様書](../operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノードの設計仕様
+- [セットアップガイド](../setup_guide.md) - Section 9: IMU セットアップの概要手順
 
 ---
 

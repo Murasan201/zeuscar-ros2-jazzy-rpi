@@ -199,3 +199,50 @@ ICM-42688 6軸IMUセンサーをROS 2 Jazzy環境に統合する。
 - TDDの流れ（Red→Green→Refactor）に従い、テスト17件が待機中のGreenフェーズを優先
 - LiDARは STORY-005 で動作確認済みのため、単体テストの再実施は不要
 - IMUパブリッシュノード完成後にLiDAR+IMU統合テストへ進むのが効率的
+
+---
+
+## 2026-02-06 (2) Greenフェーズ完了
+
+### 担当: Claude Code (PM)
+
+### 作業内容
+
+#### STORY-025: IMUデータパブリッシュノード（Greenフェーズ）
+
+##### 1. imu_publish_node.py 実装
+
+- [x] `imu_publish_node.py` を新規作成
+  - モジュールレベル関数: `dps_to_rad_s()`, `g_to_m_s2()`, `create_imu_msg()`
+  - 変換ヘルパー: `_dict_to_imu_msg()`（辞書 → sensor_msgs/msg/Imu）
+  - ROS 2ノードクラス: `ImuPublishNode`
+  - エラーハンドリング: 連続5回失敗で自動再初期化
+- [x] テストのimportを仮実装から実モジュールに切替
+- [x] `setup.py` にエントリポイント `imu_node` 追加
+- [x] `colcon build` 成功
+- [x] 17/17 テストパス
+
+##### 2. launchファイル作成
+
+- [x] `launch/imu.launch.py` を新規作成（全パラメータ設定済み）
+
+##### 3. ドキュメント整備
+
+- [x] `docs/guides/imu_publish_node_implementation_guide.md` - TDD実装ガイド（教材用）作成
+- [x] `docs/guides/imu_setup_guide.md` - 教育用資料ディレクトリに移動
+- [x] `CLAUDE.md` - 教育用資料・実装ガイドのルール追加
+- [x] `docs/README.md` - 索引再編（guides/セクション追加）
+
+### 成果物
+
+| 種類 | パス | 説明 |
+|------|------|------|
+| 実装 | `zeuscar_imu/imu_publish_node.py` | IMUパブリッシュノード |
+| launch | `launch/imu.launch.py` | パブリッシュノード用launch |
+| ガイド | `docs/guides/imu_publish_node_implementation_guide.md` | TDD実装ガイド（教材） |
+
+### 次のアクション
+
+- [ ] IMU実機テスト: `ros2 run zeuscar_imu imu_node` でトピック配信確認
+- [ ] STORY-025を Done に更新（実機テスト完了後）
+- [ ] 統合bringupパッケージ設計（STORY-014）

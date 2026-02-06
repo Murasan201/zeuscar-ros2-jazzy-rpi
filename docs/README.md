@@ -7,7 +7,6 @@
 ## セットアップガイド
 
 - [setup_guide.md](setup_guide.md) - 環境構築手順（初心者向け）
-- [imu_setup_guide.md](imu_setup_guide.md) - ICM-42688 6軸IMUセットアップガイド（配線からROS 2トピック配信まで）
 
 ## 開発プロセス
 
@@ -18,6 +17,11 @@
 
 - [python_coding_guidelines.md](python_coding_guidelines.md) - Pythonコーディングガイドライン
 - [COMMENT_STYLE_GUIDE.md](COMMENT_STYLE_GUIDE.md) - コメントスタイルガイド
+
+## 教育用資料・実装ガイド (guides/)
+
+- [guides/imu_setup_guide.md](guides/imu_setup_guide.md) - ICM-42688 6軸IMUセットアップガイド（配線からROS 2トピック配信まで）
+- [guides/imu_publish_node_implementation_guide.md](guides/imu_publish_node_implementation_guide.md) - IMUパブリッシュノード実装ガイド（TDD教材）
 
 ## ハードウェア仕様
 
