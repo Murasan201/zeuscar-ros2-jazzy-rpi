@@ -297,40 +297,62 @@ ros2 launch zeuscar_imu imu.launch.py publish_rate_hz:=100.0
 
 ---
 
-## Step 6: 実機テスト（次ステップ）
+## Step 6: 実機テスト
 
-### 概要
+### 目的
 
-ソフトウェアテストが完了したので、次は実際のIMUセンサーを使った動作確認を行う。
+ソフトウェアテスト完了後、実際のIMUセンサーを使って `/imu/data_raw` トピックの配信を確認する。
+
+### 前提条件
+
+- IMUセンサーがI2C接続済み
+- smbus2ライブラリがインストール済み
+- ユーザーが `i2c` グループに所属していること
+
+### i2cグループの確認・追加
+
+```bash
+# グループ確認
+groups | grep i2c
+
+# 未所属の場合は追加
+sudo usermod -aG i2c $USER
+# ログアウト・再ログインで反映
+```
+
+> **注意**: `sudo i2cdetect -y 1` でIMUが見えるのにノードが起動しない場合、この権限問題が原因であることが多い。
 
 ### 実行手順
 
 ```bash
-# ターミナル1: IMUパブリッシュノードを起動
+# ノード起動
 source ~/ros2_ws/install/setup.bash
 ros2 run zeuscar_imu imu_node
 
-# ターミナル2: トピックの確認
+# 別ターミナルで確認
 ros2 topic list | grep imu
-ros2 topic echo /imu/data_raw
 ros2 topic hz /imu/data_raw
+ros2 topic echo /imu/data_raw --qos-reliability best_effort --once
 ```
 
-### 確認項目
+> **ポイント**: パブリッシャーが Best Effort QoS を使用しているため、`ros2 topic echo` にも `--qos-reliability best_effort` オプションが必要。
 
-| 項目 | 期待値 |
-|------|--------|
-| トピック `/imu/data_raw` が存在する | ros2 topic list で確認 |
-| 配信周波数 | 約 50 Hz |
-| 静止時 linear_acceleration.z | 約 9.8 m/s² |
-| 静止時 angular_velocity | 約 0 rad/s |
-| orientation_covariance[0] | -1.0 |
-| frame_id | `imu_link` |
+### テスト結果（実施例）
 
-### 必要条件
+| 確認項目 | 期待値 | 実測値 | 結果 |
+|---------|--------|--------|------|
+| トピック `/imu/data_raw` 存在 | あり | あり | 合格 |
+| 配信周波数 | 約50 Hz | 49.976 Hz | 合格 |
+| frame_id | `imu_link` | `imu_link` | 合格 |
+| linear_acceleration.z (静止) | 約9.8 m/s² | 9.902 m/s² | 合格 |
+| angular_velocity (静止) | 約0 rad/s | ≈0.001 rad/s | 合格 |
+| orientation_covariance[0] | -1.0 | -1.0 | 合格 |
 
-- IMUセンサーがI2C接続済み（ロボット静止状態でOK）
-- smbus2ライブラリがインストール済み
+### 学んだこと
+
+1. **QoSの一致**: パブリッシャーとサブスクライバーのQoS設定が一致しないとデータを受信できない。Best Effort で配信しているトピックには、echo 側も Best Effort を指定する必要がある
+
+2. **I2C権限**: `/dev/i2c-*` デバイスへのアクセスには `i2c` グループへの所属が必要。`sudo` でのツール実行では問題が隠れるため、実際のノード起動時に初めて発覚することがある
 
 ---
 
@@ -363,4 +385,4 @@ ros2 topic hz /imu/data_raw
 
 | 日付 | 内容 |
 |------|------|
-| 2026-02-06 | 初版作成（STORY-025 Red/Green/Launchフェーズ完了時点） |
+| 2026-02-06 | 初版作成（STORY-025 全フェーズ完了、実機テスト合格） |

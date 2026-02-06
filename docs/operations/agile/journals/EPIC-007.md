@@ -241,8 +241,29 @@ ICM-42688 6軸IMUセンサーをROS 2 Jazzy環境に統合する。
 | launch | `launch/imu.launch.py` | パブリッシュノード用launch |
 | ガイド | `docs/guides/imu_publish_node_implementation_guide.md` | TDD実装ガイド（教材） |
 
+##### 4. IMU実機テスト - 全項目合格
+
+- [x] `ros2 run zeuscar_imu imu_node` でノード起動
+- [x] `/imu/data_raw` トピック配信確認
+
+**発見した問題**:
+- ユーザー `pi` が `i2c` グループに未所属のため `/dev/i2c-1` を開けないエラーが発生
+- `sudo usermod -aG i2c pi` で解決
+- トラブルシューティング（setup_guide.md Section 10.20）に記載
+
+**テスト結果**:
+
+| 確認項目 | 期待値 | 実測値 | 結果 |
+|---------|--------|--------|------|
+| トピック `/imu/data_raw` 存在 | あり | あり | 合格 |
+| 配信周波数 | 約50 Hz | 49.976 Hz | 合格 |
+| frame_id | `imu_link` | `imu_link` | 合格 |
+| linear_acceleration.z (静止) | 約9.8 m/s² | 9.902 m/s² | 合格 |
+| angular_velocity (静止) | 約0 rad/s | ≈0.001 rad/s | 合格 |
+| orientation_covariance[0] | -1.0 | -1.0 | 合格 |
+
 ### 次のアクション
 
-- [ ] IMU実機テスト: `ros2 run zeuscar_imu imu_node` でトピック配信確認
-- [ ] STORY-025を Done に更新（実機テスト完了後）
+- [x] IMU実機テスト完了
+- [ ] STORY-025を Done に更新
 - [ ] 統合bringupパッケージ設計（STORY-014）
