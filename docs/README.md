@@ -7,6 +7,7 @@
 ## セットアップガイド
 
 - [setup_guide.md](setup_guide.md) - 環境構築手順（初心者向け）
+- [imu_setup_guide.md](imu_setup_guide.md) - ICM-42688 6軸IMUセットアップガイド（配線からROS 2トピック配信まで）
 
 ## 開発プロセス
 
@@ -40,6 +41,7 @@
 
 - [specs/README.md](operations/specs/README.md) - 仕様書ガイド
 - [specs/EPIC-006_arduino_interface.md](operations/specs/EPIC-006_arduino_interface.md) - Arduino通信インタフェース仕様書
+- [specs/STORY-025_imu_publish_node.md](operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノード仕様書
 
 ### エスカレーション (operations/pm-briefs/)
 

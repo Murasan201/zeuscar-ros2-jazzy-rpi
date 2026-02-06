@@ -113,3 +113,64 @@ ICM-42688 6軸IMUセンサーをROS 2 Jazzy環境に統合する。
 - IMU取り付け向きの確認（テスト結果から軸方向を検証）→ テスト2回目で全軸の方向確認済み
 
 ---
+
+## 2026-02-06
+
+### 担当: Claude Code (PM)
+
+### 作業内容
+
+#### STORY-025: IMUデータパブリッシュノード（Redフェーズ）
+
+##### 1. ICM42688ドライバ抽出
+
+- [x] `icm42688_driver.py` を新規作成（ICM42688クラスを分離）
+- [x] `imu_test_node.py` のimportを更新
+- [x] `colcon build` でビルド確認（成功）
+
+##### 2. 仕様書作成
+
+- [x] `docs/operations/specs/STORY-025_imu_publish_node.md` を作成
+- 内容: ノード設計、単位変換、メッセージ構築、エラーハンドリング、テスト計画
+
+##### 3. テストファイル作成（Redフェーズ）
+
+- [x] `test/test_imu_publish.py` を作成（17テストケース）
+- テスト結果: 17/17 パス（仮実装をテストファイル内に定義）
+- Greenフェーズで `imu_publish_node.py` に関数を移動しimportを切り替え予定
+
+| カテゴリ | テスト数 |
+|---------|---------|
+| 単位変換（dps→rad/s） | 3 |
+| 単位変換（g→m/s²） | 3 |
+| メッセージ構築 | 6 |
+| エラーハンドリング | 3 |
+| ドライバスケール | 2 |
+
+### 成果物
+
+| 種類 | パス | 説明 |
+|------|------|------|
+| ドライバ | `zeuscar_imu/icm42688_driver.py` | ICM42688ドライバモジュール（抽出） |
+| 仕様書 | `docs/operations/specs/STORY-025_imu_publish_node.md` | パブリッシュノード仕様書 |
+| テスト | `test/test_imu_publish.py` | Redフェーズテスト（17件） |
+
+##### 4. ドキュメント更新
+
+- [x] `docs/operations/agile/product-backlog.md` - STORY-025を In Progress に更新、仕様書リンク追加
+- [x] `docs/operations/agile/journals/EPIC-007.md` - 2026-02-06作業ログ追記
+- [x] `docs/README.md` - 仕様書索引にSTORY-025追加
+- [x] `docs/operations/specs/README.md` - 仕様書一覧にSTORY-025追加
+- [x] `CLAUDE.md` - PM運用ルール追加
+
+##### 5. Greenフェーズ実装前ドキュメント整備
+
+- [x] `docs/imu_setup_guide.md` - 6軸IMUセットアップガイド新規作成
+- [x] `docs/setup_guide.md` - Section 10.19 python3コマンド問題を追記
+
+### 次のアクション
+
+- [ ] Greenフェーズ: `imu_publish_node.py` の実装
+- [ ] setup.py にエントリポイント追加
+- [ ] launchファイル作成
+- [ ] 実機テスト

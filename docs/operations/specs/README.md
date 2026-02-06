@@ -24,4 +24,5 @@
 
 | ID | ファイル名 | 概要 | ステータス |
 |---|---|---|---|
-| - | - | - | - |
+| EPIC-006 | EPIC-006_arduino_interface.md | Arduino通信インタフェース仕様書 | 作成済み |
+| STORY-025 | STORY-025_imu_publish_node.md | IMUデータパブリッシュノード仕様書 | 作成済み |

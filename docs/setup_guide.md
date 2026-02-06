@@ -1873,6 +1873,39 @@ self._bus.write_byte_data(self.i2c_address, self.REG_ACCEL_CONFIG0, 0x66)
 
 **関連テストレポート**: [IMU_test_report_20260203_211545.md](troubleshooting/IMU_test_report_20260203_211545.md)
 
+### 10.19 `python`コマンドが見つからない
+
+**症状**: `python`コマンドを実行すると「コマンドが見つかりません」エラーが表示される
+
+```
+python: コマンドが見つかりません
+```
+
+**原因**: Ubuntu 24.04ではデフォルトで`python`コマンドが存在しない。`python3`のみが提供されている。
+
+**解決策1（推奨）**: `python3`コマンドを使用する
+```bash
+# pythonの代わりにpython3を使用
+python3 -m pytest tests/ -v
+python3 script.py
+```
+
+**解決策2**: `python-is-python3`パッケージをインストール
+```bash
+sudo apt install -y python-is-python3
+```
+
+これにより`python`コマンドが`python3`へのシンボリックリンクとして作成される。
+
+**確認方法**:
+```bash
+which python3
+# /usr/bin/python3
+
+python3 --version
+# Python 3.12.x
+```
+
 ---
 
 ## 更新履歴
@@ -1900,3 +1933,4 @@ self._bus.write_byte_data(self.i2c_address, self.REG_ACCEL_CONFIG0, 0x66)
 | 2026-02-03 | Section 9.6 pip3インストール手順とPEP 668対応を追記 |
 | 2026-02-03 | 10.15 PEP 668エラー・pipコマンド未インストール対応を追記 |
 | 2026-02-03 | 10.18 IMU加速度スケールファクター不一致の問題と解決策を追記 |
+| 2026-02-06 | 10.19 pythonコマンド未インストール問題を追記 |

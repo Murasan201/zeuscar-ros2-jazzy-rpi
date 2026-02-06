@@ -76,7 +76,7 @@
 | STORY-022 | IMUドライバ実装（ICM-42688） | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
 | STORY-023 | IMUテストノード実装 | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
 | STORY-024 | IMU動作確認 | High | - | Done | - |
-| STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | ToDo | - |
+| STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | In Progress | [STORY-025_imu_publish_node.md](../specs/STORY-025_imu_publish_node.md) |
 
 ### 統合・起動
 
@@ -111,3 +111,4 @@
 | 2026-02-03 | - | EPIC-007追加、STORY-021〜025を登録 |
 | 2026-02-03 | - | STORY-021/022を Done、STORY-023/024を In Progress に更新 |
 | 2026-02-04 | - | STORY-023/024を Done に更新（IMUテスト2回目全項目合格） |
+| 2026-02-06 | - | STORY-025を In Progress に更新、仕様書・テスト作成（Redフェーズ） |
