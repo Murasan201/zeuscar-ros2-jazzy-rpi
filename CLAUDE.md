@@ -28,12 +28,17 @@
 
 - 本プロジェクトの開発は `docs/agile_tdd_operating_rules.md` に従って進める
 - マルチエージェント体制については `docs/multi_agent_development_flow.md` に従って進める
+- Agent Teams（実験的機能）の利用時は `docs/guides/agent_teams_guide.md` も参照すること
 
 ## 実装ルール
 
 - 本プロジェクトは基本的にPythonで実装する
 - コードの実装方法は `docs/python_coding_guidelines.md` に従う
 - コードのコメントは `docs/COMMENT_STYLE_GUIDE.md` に従う
+- コーディングが発生する業務では**テスト作成と実装のエージェントを必ず分離**する（TDDエージェント分離ルール）
+  - テスト担当エージェントが先にテストを作成（Red フェーズ）
+  - 実装担当エージェントがテストを通す実装を行う（Green フェーズ）
+  - 詳細は `docs/agile_tdd_operating_rules.md` セクション6 および `docs/multi_agent_development_flow.md` セクション7.3 を参照
 
 ## セットアップガイド
 

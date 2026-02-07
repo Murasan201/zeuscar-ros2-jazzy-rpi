@@ -265,5 +265,5 @@ ICM-42688 6軸IMUセンサーをROS 2 Jazzy環境に統合する。
 ### 次のアクション
 
 - [x] IMU実機テスト完了
-- [ ] STORY-025を Done に更新
+- [x] STORY-025を Done に更新
 - [ ] 統合bringupパッケージ設計（STORY-014）

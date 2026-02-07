@@ -14,7 +14,7 @@
 | EPIC-004 | SLAM構築 | slam_toolboxによる自己位置推定 | In Progress |
 | EPIC-005 | 可視化 | RVizによる可視化環境 | In Progress |
 | EPIC-006 | Arduino駆動系統合 | Raspberry Pi-Arduino間の通信インタフェース | Done |
-| EPIC-007 | IMU統合 | ICM-42688 6軸IMUのROS 2統合 | In Progress |
+| EPIC-007 | IMU統合 | ICM-42688 6軸IMUのROS 2統合 | Done |
 
 ---
 
@@ -76,7 +76,7 @@
 | STORY-022 | IMUドライバ実装（ICM-42688） | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
 | STORY-023 | IMUテストノード実装 | High | - | Done | [icm42688_imu_sensor.md](../../hardware/icm42688_imu_sensor.md) |
 | STORY-024 | IMU動作確認 | High | - | Done | - |
-| STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | In Progress | [STORY-025_imu_publish_node.md](../specs/STORY-025_imu_publish_node.md) |
+| STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | Done | [STORY-025_imu_publish_node.md](../specs/STORY-025_imu_publish_node.md) |
 
 ### 統合・起動
 
