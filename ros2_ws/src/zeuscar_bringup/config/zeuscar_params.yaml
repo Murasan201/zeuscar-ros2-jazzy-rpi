@@ -1,0 +1,6 @@
+# ZeusCar 統合パラメータ（将来拡張用）
+#
+# パッケージ固有パラメータは各パッケージのconfig/に配置:
+#   - zeuscar_lidar/config/rplidar_a1.yaml
+#   - zeuscar_motor/config/motor_params.yaml
+#   - zeuscar_slam/config/slam_params.yaml

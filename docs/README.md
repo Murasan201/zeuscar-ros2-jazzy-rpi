@@ -22,6 +22,8 @@
 
 - [guides/imu_setup_guide.md](guides/imu_setup_guide.md) - ICM-42688 6軸IMUセットアップガイド（配線からROS 2トピック配信まで）
 - [guides/imu_publish_node_implementation_guide.md](guides/imu_publish_node_implementation_guide.md) - IMUパブリッシュノード実装ガイド（TDD教材）
+- [guides/bringup_integration_guide.md](guides/bringup_integration_guide.md) - 統合Bringup実装ガイド（システム全体起動の設計と実装）
+- [guides/agent_teams_guide.md](guides/agent_teams_guide.md) - Claude Code Agent Teams ガイド（並列協調開発）
 
 ## ハードウェア仕様
 
@@ -46,6 +48,7 @@
 - [specs/README.md](operations/specs/README.md) - 仕様書ガイド
 - [specs/EPIC-006_arduino_interface.md](operations/specs/EPIC-006_arduino_interface.md) - Arduino通信インタフェース仕様書
 - [specs/STORY-025_imu_publish_node.md](operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノード仕様書
+- [specs/STORY-014-015_bringup_design.md](operations/specs/STORY-014-015_bringup_design.md) - 統合bringup設計仕様書（全パッケージ統合起動の設計）
 
 ### エスカレーション (operations/pm-briefs/)
 
