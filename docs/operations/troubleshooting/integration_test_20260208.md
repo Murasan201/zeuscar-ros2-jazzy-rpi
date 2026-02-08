@@ -140,6 +140,19 @@ ros2 launch zeuscar_bringup zeuscar.launch.py sensor_startup_delay:=5.0
 
 **テスト結果:** 55/55 テストパス（既存51 + 新規4）
 
+### 実機確認（2026-02-08）
+
+TimerAction 導入後、`ros2 launch zeuscar_bringup zeuscar.launch.py` の一発起動で動作確認を実施。
+
+**結果:**
+- 4ノード全正常起動: robot_state_publisher, rplidar_node, imu_node, motor_controller_node
+- /scan 配信: OK（frame_id=laser_frame）
+- /imu/data_raw 配信: OK（frame_id=imu_link）
+- TFツリー: base_footprint→base_link→laser_frame, imu_link 全接続確認
+- 起動シーケンス: robot_base 即時起動 → 3秒後にセンサー系起動 → 全ノード正常稼働
+
+**結論:** TSB-INT-003 は TimerAction（3秒遅延）により完全に解決。
+
 ### ステータス
 
-解決済（TimerAction 導入）
+解決済（TimerAction 導入、実機確認合格）
