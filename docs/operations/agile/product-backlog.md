@@ -82,8 +82,8 @@
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
 |---|---|---|---|---|---|
-| STORY-014 | zeuscar_bringupパッケージ作成 | High | - | ToDo | - |
-| STORY-015 | 統合launchファイル作成 | High | - | ToDo | - |
+| STORY-014 | zeuscar_bringupパッケージ作成 | High | - | Done | [STORY-014-015_bringup_design.md](../specs/STORY-014-015_bringup_design.md) |
+| STORY-015 | 統合launchファイル作成 | High | - | Done | [STORY-014-015_bringup_design.md](../specs/STORY-014-015_bringup_design.md) |
 
 ---
 
@@ -113,3 +113,5 @@
 | 2026-02-04 | - | STORY-023/024を Done に更新（IMUテスト2回目全項目合格） |
 | 2026-02-06 | - | STORY-025を In Progress に更新、仕様書・テスト作成（Redフェーズ） |
 | 2026-02-06 | - | STORY-025 Greenフェーズ完了（実機テスト待ち） |
+| 2026-02-07 | - | STORY-025を Done に更新、EPIC-007完了 |
+| 2026-02-07 | - | STORY-014/015 Done（統合bringup設計・テスト51件・実装完了） |

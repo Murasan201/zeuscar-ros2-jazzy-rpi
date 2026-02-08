@@ -49,6 +49,7 @@
 - [specs/EPIC-006_arduino_interface.md](operations/specs/EPIC-006_arduino_interface.md) - Arduino通信インタフェース仕様書
 - [specs/STORY-025_imu_publish_node.md](operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノード仕様書
 - [specs/STORY-014-015_bringup_design.md](operations/specs/STORY-014-015_bringup_design.md) - 統合bringup設計仕様書（全パッケージ統合起動の設計）
+- [specs/integration_test_plan.md](operations/specs/integration_test_plan.md) - 実機統合テスト計画書（全コンポーネント同時起動テスト）
 
 ### エスカレーション (operations/pm-briefs/)
 

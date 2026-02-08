@@ -399,6 +399,15 @@ ros2 topic echo /imu/data_raw
 - use_slam, use_rviz
 - serial_port_motor, serial_port_lidar
 
+**TSB-INT-003対策: センサー遅延起動**
+
+sensors.launch.py の起動を TimerAction で3秒遅延させている。これにより robot_base（TF + Motor）が先に起動し安定した後にセンサー系が起動する。
+
+遅延時間は `sensor_startup_delay` Launch Argument でカスタマイズ可能:
+```bash
+ros2 launch zeuscar_bringup zeuscar.launch.py sensor_startup_delay:=5.0
+```
+
 **動作確認:**
 ```bash
 # 全機能起動（SLAM除く）

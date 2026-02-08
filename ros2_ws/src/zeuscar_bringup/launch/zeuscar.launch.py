@@ -18,6 +18,7 @@ Launch Arguments:
     use_rviz: RViz自動起動フラグ (default: false)
     serial_port_motor: モーターシリアルポート (default: /dev/ttyACM0)
     serial_port_lidar: LiDARシリアルポート (default: /dev/rplidar)
+    sensor_startup_delay: センサー起動遅延秒数 (default: 3.0, TSB-INT-003対策)
 """
 
 import os
@@ -25,7 +26,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -88,6 +89,13 @@ def generate_launch_description():
         description='LiDARシリアルポート'
     )
 
+    # センサー起動遅延（TSB-INT-003対策）
+    declare_sensor_startup_delay = DeclareLaunchArgument(
+        'sensor_startup_delay',
+        default_value='3.0',
+        description='センサー起動遅延（秒）'
+    )
+
     # ロボットベース（TF + Motor）
     robot_base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -110,6 +118,13 @@ def generate_launch_description():
             'use_imu': LaunchConfiguration('use_imu'),
             'serial_port_lidar': LaunchConfiguration('serial_port_lidar'),
         }.items(),
+    )
+
+    # センサー起動遅延（TSB-INT-003対策）
+    # robot_baseの起動完了を待ってからセンサーを起動する
+    sensors_delayed_launch = TimerAction(
+        period=LaunchConfiguration('sensor_startup_delay'),
+        actions=[sensors_launch],
     )
 
     # SLAM（条件付き起動）
@@ -143,8 +158,9 @@ def generate_launch_description():
         declare_use_rviz,
         declare_serial_port_motor,
         declare_serial_port_lidar,
+        declare_sensor_startup_delay,
         robot_base_launch,
-        sensors_launch,
+        sensors_delayed_launch,
         slam_launch,
         rviz_node,
     ])

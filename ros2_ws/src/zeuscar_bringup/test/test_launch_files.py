@@ -6,6 +6,7 @@
 - generate_launch_description関数の存在確認
 - Launch Argumentsのデフォルト値検証
 - 条件付き起動フラグの検証（use_lidar, use_imu, use_motor, use_slam）
+- TimerActionによるセンサー起動遅延（TSB-INT-003対策）
 """
 import importlib.util
 import os
@@ -323,6 +324,83 @@ class TestZeuscarLaunchArguments:
         """serial_port_lidarのデフォルト値は/dev/rplidar."""
         args = _get_launch_arguments(launch_desc)
         assert _get_default_value_text(args['serial_port_lidar']) == '/dev/rplidar'
+
+    def test_has_sensor_startup_delay_arg(self, launch_desc):
+        """sensor_startup_delay引数が定義されている（TSB-INT-003対策）."""
+        args = _get_launch_arguments(launch_desc)
+        assert 'sensor_startup_delay' in args, (
+            'sensor_startup_delay 引数が LaunchDescription に定義されていません'
+        )
+
+    def test_sensor_startup_delay_default_value(self, launch_desc):
+        """sensor_startup_delayのデフォルト値は3.0."""
+        args = _get_launch_arguments(launch_desc)
+        assert _get_default_value_text(args['sensor_startup_delay']) == '3.0'
+
+
+# ============================================================
+# TimerAction 起動遅延テスト（TSB-INT-003対策）
+# ============================================================
+
+class TestTimerActionDelay:
+    """TimerActionによるセンサー起動遅延の検証.
+
+    全ノード同時起動時にLiDAR初期化が失敗する問題（TSB-INT-003）の対策として、
+    sensors_launchをTimerActionでラップして起動遅延を設ける。
+    """
+
+    @pytest.fixture()
+    def launch_desc(self):
+        """zeuscar.launch.pyのLaunchDescriptionを生成."""
+        path = _get_launch_file_path('zeuscar.launch.py')
+        if not os.path.isfile(path):
+            pytest.skip('zeuscar.launch.py が未作成')
+        module = _load_launch_module(path)
+        return module.generate_launch_description()
+
+    def _find_timer_actions(self, launch_desc):
+        """LaunchDescriptionからTimerActionを全て取得する.
+
+        Returns:
+            TimerActionオブジェクトのリスト
+        """
+        from launch.actions import TimerAction
+
+        return [
+            entity for entity in launch_desc.entities
+            if isinstance(entity, TimerAction)
+        ]
+
+    def test_has_timer_action(self, launch_desc):
+        """LaunchDescriptionにTimerActionが含まれている."""
+        timer_actions = self._find_timer_actions(launch_desc)
+        assert len(timer_actions) >= 1, (
+            'TimerAction が LaunchDescription に含まれていません'
+        )
+
+    def test_timer_action_contains_sensors_launch(self, launch_desc):
+        """TimerActionの中にsensors_launch（IncludeLaunchDescription）が含まれている."""
+        from launch.actions import IncludeLaunchDescription
+
+        timer_actions = self._find_timer_actions(launch_desc)
+        assert len(timer_actions) >= 1, (
+            'TimerAction が見つからないため、内部アクションを検証できません'
+        )
+
+        # TimerAction内にIncludeLaunchDescriptionが存在するか確認
+        found = False
+        for timer_action in timer_actions:
+            for action in timer_action.actions:
+                if isinstance(action, IncludeLaunchDescription):
+                    found = True
+                    break
+            if found:
+                break
+
+        assert found, (
+            'TimerAction 内に IncludeLaunchDescription（sensors_launch）が'
+            '含まれていません'
+        )
 
 
 # ============================================================

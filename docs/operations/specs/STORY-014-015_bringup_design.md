@@ -220,6 +220,7 @@ zeuscar_bringup/
 
 - 上記全グループをIncludeLaunchDescriptionで統合
 - 条件付き起動制御
+- sensors_launch は TimerAction により遅延起動（TSB-INT-003対策）。`sensor_startup_delay` 引数（デフォルト3.0秒）で制御し、robot_base（TF + Motor）が先に起動・安定した後にセンサー系を起動する
 
 ### 3.4 パラメータ管理
 
@@ -252,6 +253,7 @@ zeuscar_bringup/
 | use_rviz | bool | false | RViz自動起動フラグ |
 | serial_port_motor | string | /dev/ttyACM0 | モーターシリアルポート |
 | serial_port_lidar | string | /dev/rplidar | LiDARシリアルポート |
+| sensor_startup_delay | float | 3.0 | センサー起動遅延（秒）。TSB-INT-003対策 |
 
 #### robot_base.launch.py
 

@@ -30,3 +30,4 @@
 | EPIC-005 | EPIC-005_visualization.md | 可視化時のエラー（RViz2、OpenGL、リモート接続） | 準備中 |
 | GENERAL | GENERAL_ssh_connection.md | SSH接続エラー（ホストキー未登録、SSH鍵未設定） | 解決済 |
 | IMU | IMU_test_report_20260203_211545.md | IMUテストレポート（加速度スケールファクター不一致） | 要修正 |
+| STORY-014/015 | [integration_test_20260208.md](integration_test_20260208.md) | 実機統合テスト（TF静的トピック、プロセス残存、全機能同時起動） | 解決済 |
