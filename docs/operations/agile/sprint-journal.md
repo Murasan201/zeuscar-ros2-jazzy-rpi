@@ -85,6 +85,9 @@
 | STORY-022 | IMUドライバ実装（ICM-42688） | - | Done | [EPIC-007](journals/EPIC-007.md) |
 | STORY-023 | IMUテストノード実装 | - | Done | [EPIC-007](journals/EPIC-007.md) |
 | STORY-024 | IMU動作確認 | - | Done | [EPIC-007](journals/EPIC-007.md) |
+| STORY-025 | IMUデータパブリッシュノード実装 | - | Done | [EPIC-007](journals/EPIC-007.md) |
+| STORY-014 | zeuscar_bringupパッケージ作成 | - | Done | [STORY-014-015](journals/STORY-014-015.md) |
+| STORY-015 | 統合launchファイル作成 | - | Done | [STORY-014-015](journals/STORY-014-015.md) |
 
 #### 完了した作業
 
@@ -318,42 +321,70 @@
    - STORY-023（IMUテストノード実装）→ Done
    - STORY-024（IMU動作確認）→ Done
 
+**2026-02-06〜07: STORY-025 IMUデータパブリッシュノード実装**
+
+1. **TDD Red→Green**
+   - テスト17件作成 → 実装 → 全パス
+   - imu_publish_node: ICM-42688から50Hzで/imu/data_rawを配信
+
+2. **EPIC-007完了**
+   - STORY-021〜025 全Done
+
+**2026-02-07: STORY-014/015 統合bringup設計・実装**
+
+1. **設計仕様書作成**
+   - 階層化launch構成（個別→グループ→統合の3層）
+   - Launch Arguments設計（use_lidar, use_imu, use_motor等8引数）
+
+2. **TDD Red→Green**
+   - URDF imu_link追加テスト12件 + launchファイルテスト39件 = 51件全パス
+   - robot_base.launch.py, sensors.launch.py, zeuscar.launch.py作成
+
+**2026-02-08: 実機統合テスト実施・TSB-INT-003対策**
+
+1. **実機統合テスト S0-S5 全6ステージ実施**
+   - S0 事前確認: 合格
+   - S1 最小構成（TFのみ）: 合格
+   - S2 センサー追加（LiDAR + IMU）: 合格
+   - S3 モーター追加: 合格
+   - S4 全機能統合: 合格（TimerAction導入後）
+   - S5 Launch Arguments動作確認: 合格
+   - 検出問題3件（TSB-INT-001〜003）全て解決済
+
+2. **TSB-INT-003対策（TDD）**
+   - 問題: 全ノード同時起動時にLiDAR初期化失敗
+   - 対策: TimerActionによるセンサー3秒遅延起動
+   - テスト4件追加 → 55/55全パス
+   - 実機確認: zeuscar.launch.py一発起動で全ノード正常動作
+
+3. **ドキュメント整備**
+   - テスト計画書、トラブルシューティング、実装ガイド、設計仕様書を更新
+
 ---
 
 ### 次回再開時のアクション
 
-#### 優先度: 高（IMU到着後）
+#### 優先度: 高
 
-2. **ICM42688 IMUの統合**
-   - IMUをRaspberry Piに接続（I2CまたはSPI）
-   - ros2用IMUドライバのインストール・設定
-   - /imuトピックの動作確認
-
-3. **オドメトリの生成**
+1. **STORY-011: オドメトリ生成 → SLAM動作確認**
    - robot_localizationパッケージのインストール
-   - IMUデータからオドメトリを生成
+   - IMUデータ（/imu/data_raw）からオドメトリを生成
    - odom → base_footprint TFの確認
-
-4. **SLAM動作確認（STORY-011）**
    - LiDAR + TF + オドメトリを同時起動
-   - slam_toolboxでマッピング実行
-   - マップ保存の確認
+   - slam_toolboxでマッピング実行・マップ保存確認
 
 #### 優先度: 中（ディスプレイ接続時）
 
-5. **RViz表示確認（STORY-013）**
+2. **STORY-013: RViz表示確認**
    - ディスプレイ接続またはVNC設定
-   - `rviz2 -d zeuscar.rviz`で起動
+   - `ros2 launch zeuscar_bringup zeuscar.launch.py use_rviz:=true`
    - LaserScan/TF/RobotModel/Map表示確認
 
 #### 優先度: 低（将来対応）
 
-6. **ホイールオドメトリの統合**
+3. **ホイールオドメトリの統合**
    - モーターエンコーダからオドメトリ計算
    - IMU + ホイールオドメトリのセンサーフュージョン
-
-7. **統合launchファイル作成（STORY-014/015）**
-   - zeuscar_bringupに全ノード起動用launchファイル作成
 
 ---
 
@@ -375,11 +406,11 @@
 - zeuscar_lidar
 - zeuscar_slam
 - zeuscar_motor（Arduino駆動系）
-- zeuscar_imu（NEW: IMU統合）
+- zeuscar_imu（IMU統合）
 
 動作確認済み:
-- LiDAR（/scanトピック）
-- TF（base_footprint → base_link → laser_frame）
+- LiDAR（/scanトピック、~6.6Hz安定）
+- TF（base_footprint → base_link → laser_frame, imu_link）
 - robot_state_publisher
 - zeuscar_motor単体テスト（13件パス）
 - zeuscar_motor実機テスト（全10方向動作確認済み）
@@ -387,6 +418,9 @@
 - IMUジャイロスコープ（旋回検出OK）
 - IMU加速度X軸（前進/後退検出OK）
 - IMU加速度Z軸（+1.009g、スケールファクター修正後に正常動作確認）
+- zeuscar_imu imu_publish_node（/imu/data_raw、~50Hz安定）
+- 統合bringup実機テスト S0-S5 全合格（55/55テストパス）
+- zeuscar.launch.py一発起動で全4ノード正常動作確認済み
 
 確認中:
 （なし）
@@ -394,6 +428,7 @@
 未確認:
 - slam_toolbox（オドメトリ待ち）
 - RViz2（ディスプレイ待ち）
+- robot_localization（オドメトリ生成、未インストール）
 ```
 
 #### PMブリーフ管理
@@ -424,3 +459,6 @@
 | 2026-01-24 | - | EPIC-006 Arduino駆動系統合完了（実機テスト成功） |
 | 2026-02-03 | - | EPIC-007 IMU統合開始（テスト1回目、スケールファクター問題検出・修正） |
 | 2026-02-04 | - | EPIC-007 IMUテスト2回目完了（全項目合格、STORY-023/024 Done） |
+| 2026-02-07 | - | STORY-025 IMUパブリッシュノード実装完了（17/17テストパス） |
+| 2026-02-07 | - | STORY-014/015 統合bringup設計・実装（51/51テストパス） |
+| 2026-02-08 | - | 実機統合テスト S0-S5 全合格、TSB-INT-003対策（TimerAction導入、55/55テストパス） |
