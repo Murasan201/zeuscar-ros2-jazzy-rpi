@@ -485,6 +485,28 @@ ros2 topic echo /imu/data_raw --once
 - 原因: URDFにimu_link未定義
 - 対策: Phase 1（URDF修正）実施
 
+**エラー5: `/tf_static` が `ros2 topic echo` で取得できない（TSB-INT-001）**
+- 原因: `/tf_static` は `transient_local` QoS を使用。デフォルトの `volatile` サブスクライバーでは遅延購読時に取得できない
+- 対策: QoSオプションを明示的に指定する
+```bash
+ros2 topic echo /tf_static --qos-reliability reliable --qos-durability transient_local --once
+```
+
+**エラー6: テスト繰り返し時にノードが重複する（TSB-INT-002）**
+- 原因: `ros2 launch` 終了時に子プロセス（特に `rplidar_composition`）が残存する
+- 対策: テスト間で残存プロセスを強制終了する
+```bash
+pkill -9 -f rplidar_composition
+pkill -9 -f robot_state_publisher
+pkill -9 -f imu_node
+pkill -9 -f motor_controller
+sleep 3
+```
+
+**エラー7: 全ノード同時起動時に `/scan` が配信されない（TSB-INT-003）**
+- 原因: 4ノード同時起動時の初期化タイミング競合
+- 対策: `zeuscar.launch.py` に `TimerAction` による3秒遅延を導入済み。詳細はセクション13.4参照
+
 ---
 
 ## 8. 運用上のベストプラクティス
@@ -619,6 +641,8 @@ sudo systemctl status zeuscar.service
 - **設計仕様書**: docs/operations/specs/STORY-014-015_bringup_design.md
 - **Pythonコーディング規約**: docs/python_coding_guidelines.md
 - **コメント規約**: docs/COMMENT_STYLE_GUIDE.md
+- **実機統合テスト計画書**: docs/operations/specs/integration_test_plan.md
+- **統合テスト トラブルシューティング**: docs/operations/troubleshooting/integration_test_20260208.md
 
 ---
 
@@ -682,16 +706,49 @@ IMUの実測値が未計測のため、以下の仮値を使用した。
 
 ROS2のlaunchファイルでは`ament_index_python`と`launch`パッケージが両方サードパーティ扱いされるが、異なるパッケージグループとしてflake8のI201ルールに検出される。import文のグループ間に空行を挿入して対応した。
 
-### 13.4 テスト結果
+### 13.4 TSB-INT-003 対策: TimerAction によるセンサー起動遅延
+
+実機統合テスト（2026-02-08）で、`zeuscar.launch.py` による全ノード同時起動時に rplidar_node が `/scan` を配信しない問題が発見された。
+
+**原因**: 4ノード同時起動時の初期化タイミング競合。robot_base が安定する前にセンサー系が起動すると LiDAR の初期化が失敗する。
+
+**対策**: `sensors_launch` を `TimerAction` でラップし、`sensor_startup_delay`（デフォルト3.0秒）の遅延後にセンサー系を起動する。
+
+```python
+# zeuscar.launch.py の変更箇所
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+
+declare_sensor_startup_delay = DeclareLaunchArgument(
+    'sensor_startup_delay',
+    default_value='3.0',
+    description='センサー起動遅延（秒）'
+)
+
+sensors_delayed_launch = TimerAction(
+    period=LaunchConfiguration('sensor_startup_delay'),
+    actions=[sensors_launch],
+)
+```
+
+**テスト追加（TDD Red→Green）:**
+- `test_has_sensor_startup_delay_arg`: 引数定義の検証
+- `test_sensor_startup_delay_default_value`: デフォルト値 3.0 の検証
+- `test_has_timer_action`: TimerAction 存在の検証
+- `test_timer_action_contains_sensors_launch`: TimerAction 内部に sensors_launch が含まれることの検証
+
+詳細: `docs/operations/troubleshooting/integration_test_20260208.md` TSB-INT-003
+
+### 13.5 テスト結果
 
 | テストファイル | テスト数 | 結果 |
 |---|---|---|
 | test_urdf_imu_link.py | 12 | 全パス |
-| test_launch_files.py | 39 | 全パス |
-| **合計** | **51** | **全パス** |
+| test_launch_files.py | 43 | 全パス（TSB-INT-003対策の4件含む） |
+| **合計** | **55** | **全パス** |
 
 ---
 
 **作成日**: 2026-02-07
+**更新日**: 2026-02-08（実機統合テスト結果・TSB-INT-003対策を追記）
 **作成者**: Design Agent（設計）、Implementer Agent（実装フェーズ追記）
 **対象読者**: 実装担当エージェント、テスト担当エージェント、初心者開発者
