@@ -1367,9 +1367,101 @@ ros2 launch zeuscar_imu imu_test.launch.py
 
 ---
 
-## 10. トラブルシューティング
+## 10. オドメトリ（EKF）のセットアップ
 
-### 10.1 ROS 2リポジトリの追加に失敗する
+ロボットの位置・姿勢を推定するオドメトリ機能を設定する。
+`robot_localization` パッケージのEKF（拡張カルマンフィルタ）を使い、
+IMUの角速度データからロボットの向き（ヨー角）を推定する。
+
+### 10.1 robot_localization のインストール
+
+```bash
+sudo apt update
+sudo apt install ros-jazzy-robot-localization
+```
+
+### 10.2 ビルド
+
+EKF設定ファイルとlaunchファイルは `zeuscar_bringup` パッケージに含まれている。
+
+```bash
+cd ~/ros2_ws
+colcon build --packages-select zeuscar_bringup
+source install/setup.bash
+```
+
+### 10.3 動作確認
+
+```bash
+# EKF付きで起動（LiDAR・モーターなし）
+ros2 launch zeuscar_bringup zeuscar.launch.py use_lidar:=false use_motor:=false use_ekf:=true
+
+# 別ターミナルでTF確認
+ros2 run tf2_ros tf2_echo odom base_footprint
+```
+
+`odom → base_footprint` のTF変換が表示されれば成功。
+
+### 10.4 SLAM（マッピング）の実行
+
+```bash
+# 全ノード + EKF + SLAM 起動
+ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true use_slam:=true
+
+# マップ保存（別途 nav2_map_server が必要）
+sudo apt install ros-jazzy-nav2-map-server
+ros2 run nav2_map_server map_saver_cli -f ~/zeuscar_map
+```
+
+### 10.5 設定ファイル
+
+| ファイル | 説明 |
+|---|---|
+| `zeuscar_bringup/config/ekf_params.yaml` | EKFパラメータ設定 |
+| `zeuscar_bringup/launch/odometry.launch.py` | EKF起動用launch |
+| `zeuscar_slam/config/slam_params.yaml` | SLAM設定 |
+
+詳細は `docs/guides/odometry_ekf_implementation_guide.md` を参照。
+
+### 10.6 IMUフィルタ（imu_filter_madgwick）のインストール
+
+IMUの生データ（加速度+ジャイロ）から姿勢（orientation）を推定するフィルタ。
+EKFと組み合わせることで、振動によるドリフトを大幅に抑制する。
+
+```bash
+sudo apt install ros-jazzy-imu-filter-madgwick
+```
+
+インストール後、ワークスペースを再ビルド:
+
+```bash
+cd ~/project/zeuscar-ros2-jazzy-rpi/ros2_ws
+colcon build --packages-select zeuscar_bringup
+source install/setup.bash
+```
+
+#### データフロー
+
+```
+[imu_node] → /imu/data_raw → [imu_filter_madgwick] → /imu/data → [ekf_filter_node]
+```
+
+#### 設定ファイル
+
+| ファイル | 説明 |
+|---|---|
+| `zeuscar_bringup/config/imu_filter_params.yaml` | madgwickフィルタ設定 |
+
+主要パラメータ:
+- `use_mag: false` — 6軸IMU（磁力計なし）のため無効化
+- `publish_tf: false` — TFはEKFが担当するため無効化
+- `gain: 0.1` — 加速度によるジャイロ補正の強さ（デフォルト値）
+
+---
+
+## 11. トラブルシューティング
+
+### 11.1 ROS 2リポジトリの追加に失敗する
 
 **症状**: `sudo apt update` でROS 2のパッケージが取得できない
 
@@ -1384,7 +1476,7 @@ cat /etc/apt/sources.list.d/ros2.list
 echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/ros2.list
 ```
 
-### 10.2 colconコマンドが見つからない
+### 11.2 colconコマンドが見つからない
 
 **症状**: `colcon build`を実行すると`colcon: command not found`エラーが表示される
 
@@ -1395,7 +1487,7 @@ echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] htt
 sudo apt install -y python3-colcon-common-extensions
 ```
 
-### 10.3 ros2 --versionが動作しない
+### 11.3 ros2 --versionが動作しない
 
 **症状**: `ros2 --version`を実行してもバージョンが表示されない
 
@@ -1411,7 +1503,7 @@ ros2 topic list
 ros2 run demo_nodes_cpp talker
 ```
 
-### 10.4 xacroコマンドが見つからない
+### 11.4 xacroコマンドが見つからない
 
 **症状**: URDFファイルの構文チェック時に`xacro: command not found`エラーが発生する
 
@@ -1428,7 +1520,7 @@ source /opt/ros/jazzy/setup.bash
 xacro --version
 ```
 
-### 10.5 robot_descriptionパラメータのYAMLパースエラー
+### 11.5 robot_descriptionパラメータのYAMLパースエラー
 
 **症状**: launchファイル実行時に以下のエラーが発生する
 ```
@@ -1475,7 +1567,7 @@ robot_state_publisher = Node(
 - ROS 2 Jazzy（Iron以降）で必要になった変更
 - 公式ドキュメントでも推奨されている方法
 
-### 10.6 /dev/rplidarシンボリックリンクが作成されない
+### 11.6 /dev/rplidarシンボリックリンクが作成されない
 
 **症状**: LiDARを接続しても`/dev/rplidar`が作成されない
 
@@ -1509,7 +1601,7 @@ sudo udevadm trigger --action=add /dev/ttyUSB0
 
 または、LiDARのUSBケーブルを一度抜いて再接続する。
 
-### 10.7 LiDARデバイスの権限エラー
+### 11.7 LiDARデバイスの権限エラー
 
 **症状**: LiDAR起動時に権限エラーが発生する
 
@@ -1542,7 +1634,7 @@ groups
 # dialout が含まれていればOK
 ```
 
-### 10.8 slam_toolboxが起動しない
+### 11.8 slam_toolboxが起動しない
 
 **症状**: SLAMを起動すると「TF変換が見つからない」エラーが発生する
 
@@ -1559,7 +1651,7 @@ groups
 **一時的な回避策**:
 slam_toolboxはスキャンマッチングのみでも動作しますが、精度が低下します。
 
-### 10.9 RViz2が起動しない（OpenGLエラー）
+### 11.9 RViz2が起動しない（OpenGLエラー）
 
 **症状**: RViz2起動時にOpenGL関連のエラーが発生する
 
@@ -1583,7 +1675,7 @@ rviz2
 echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
 ```
 
-### 10.10 RViz2でLaserScanが表示されない
+### 11.10 RViz2でLaserScanが表示されない
 
 **症状**: RViz2を起動してもLiDARデータが表示されない
 
@@ -1597,7 +1689,7 @@ RViz2の「Global Options」→「Fixed Frame」を`map`または`base_footprint
 **解決策2**:
 LaserScan表示の「Topic」→「Reliability Policy」を「Best Effort」に変更
 
-### 10.11 Arduinoシリアルポートが見つからない
+### 11.11 Arduinoシリアルポートが見つからない
 
 **症状**: motor_controller_node起動時にシリアルポートエラーが発生する
 
@@ -1634,7 +1726,7 @@ sudo udevadm trigger
 ls -la /dev/arduino
 ```
 
-### 10.12 Arduinoシリアルポートの権限エラー
+### 11.12 Arduinoシリアルポートの権限エラー
 
 **症状**: シリアルポートへのアクセスが拒否される
 
@@ -1656,7 +1748,7 @@ sudo usermod -aG dialout $USER
 # ログアウト・ログインが必要
 ```
 
-### 10.13 Arduinoがコマンドに反応しない
+### 11.13 Arduinoがコマンドに反応しない
 
 **症状**: コマンドを送信してもモーターが動かない
 
@@ -1699,7 +1791,7 @@ ros2 launch zeuscar_motor motor.launch.py baud_rate:=9600
 - Arduinoに外部電源を供給
 - USBハブを使用している場合は、セルフパワーハブを使用
 
-### 10.14 IMU（ICM-42688）が検出されない
+### 11.14 IMU（ICM-42688）が検出されない
 
 **症状**: `i2cdetect -y 1`で0x68にデバイスが表示されない
 
@@ -1733,7 +1825,7 @@ SAOピンの接続先を確認してください：
 - SAO → GND: アドレス 0x68
 - SAO → 3.3V: アドレス 0x69
 
-### 10.15 smbus2ライブラリがインストールできない
+### 11.15 smbus2ライブラリがインストールできない
 
 **症状1**: `pip`または`pip3`コマンドが見つからない
 
@@ -1787,7 +1879,7 @@ pip install smbus2
 pip3 install --break-system-packages --user smbus2
 ```
 
-### 10.16 IMU WHO_AM_I値が0x47でない
+### 11.16 IMU WHO_AM_I値が0x47でない
 
 **症状**: WHO_AM_Iが0xFFや0x00など予期しない値を返す
 
@@ -1807,7 +1899,7 @@ sudo reboot
 - VCCとGNDの配線を確認
 - 3.3V電源が正しく供給されているか確認
 
-### 10.17 IMUテストノードでモーターが動かない
+### 11.17 IMUテストノードでモーターが動かない
 
 **症状**: IMUテスト中にロボットが動かない
 
@@ -1828,7 +1920,7 @@ ros2 run zeuscar_imu imu_test_node
 ros2 topic list | grep motor_cmd
 ```
 
-### 10.18 IMU加速度Z軸の値が期待値の約1/8になる
+### 11.18 IMU加速度Z軸の値が期待値の約1/8になる
 
 **症状**: 静止状態でaccel_zが約0.12g（期待値: +1.0g）
 
@@ -1873,7 +1965,7 @@ self._bus.write_byte_data(self.i2c_address, self.REG_ACCEL_CONFIG0, 0x66)
 
 **関連テストレポート**: [IMU_test_report_20260203_211545.md](troubleshooting/IMU_test_report_20260203_211545.md)
 
-### 10.19 `python`コマンドが見つからない
+### 11.19 `python`コマンドが見つからない
 
 **症状**: `python`コマンドを実行すると「コマンドが見つかりません」エラーが表示される
 
@@ -1906,7 +1998,7 @@ python3 --version
 # Python 3.12.x
 ```
 
-### 10.20 IMUノード起動時に「I2Cバスを開けません」エラー
+### 11.20 IMUノード起動時に「I2Cバスを開けません」エラー
 
 **症状**: `ros2 run zeuscar_imu imu_node` 実行時に以下のエラーが表示される
 

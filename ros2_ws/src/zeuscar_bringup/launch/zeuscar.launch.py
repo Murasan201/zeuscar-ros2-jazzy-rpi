@@ -1,8 +1,8 @@
 """ZeusCar 統合メイン launchファイル.
 
 全機能を統合起動するエントリポイント。
-robot_base（TF + Motor）、sensors（LiDAR + IMU）、SLAM、RVizを
-Launch Argumentsで柔軟に制御する。
+robot_base（TF + Motor）、sensors（LiDAR + IMU）、EKF（オドメトリ）、
+SLAM、RVizをLaunch Argumentsで柔軟に制御する。
 
 起動方法:
     ros2 launch zeuscar_bringup zeuscar.launch.py
@@ -14,6 +14,7 @@ Launch Arguments:
     use_lidar: LiDAR起動フラグ (default: true)
     use_imu: IMU起動フラグ (default: true)
     use_motor: モーター起動フラグ (default: true)
+    use_ekf: EKFオドメトリ起動フラグ (default: true)
     use_slam: SLAM起動フラグ (default: false)
     use_rviz: RViz自動起動フラグ (default: false)
     serial_port_motor: モーターシリアルポート (default: /dev/ttyACM0)
@@ -63,6 +64,12 @@ def generate_launch_description():
         'use_motor',
         default_value='true',
         description='モーター起動フラグ'
+    )
+
+    declare_use_ekf = DeclareLaunchArgument(
+        'use_ekf',
+        default_value='true',
+        description='EKFオドメトリ起動フラグ'
     )
 
     declare_use_slam = DeclareLaunchArgument(
@@ -127,6 +134,17 @@ def generate_launch_description():
         actions=[sensors_launch],
     )
 
+    # EKFオドメトリ（条件付き起動）
+    odometry_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(bringup_pkg, 'launch', 'odometry.launch.py')
+        ),
+        launch_arguments={
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+        }.items(),
+        condition=IfCondition(LaunchConfiguration('use_ekf')),
+    )
+
     # SLAM（条件付き起動）
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -154,6 +172,7 @@ def generate_launch_description():
         declare_use_lidar,
         declare_use_imu,
         declare_use_motor,
+        declare_use_ekf,
         declare_use_slam,
         declare_use_rviz,
         declare_serial_port_motor,
@@ -161,6 +180,7 @@ def generate_launch_description():
         declare_sensor_startup_delay,
         robot_base_launch,
         sensors_delayed_launch,
+        odometry_launch,
         slam_launch,
         rviz_node,
     ])

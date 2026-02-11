@@ -10,6 +10,7 @@ LiDAR（RPLIDAR A1M8）とIMU（ICM-42688）を起動する。
 パブリッシュされるトピック:
     - /scan (sensor_msgs/LaserScan) - LiDAR有効時
     - /imu/data_raw (sensor_msgs/Imu) - IMU有効時
+    - /imu/data (sensor_msgs/Imu) - IMU有効時（madgwickフィルタ済み）
 """
 
 import os
@@ -21,6 +22,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -28,6 +30,12 @@ def generate_launch_description():
     # パッケージパス取得
     lidar_pkg = get_package_share_directory('zeuscar_lidar')
     imu_pkg = get_package_share_directory('zeuscar_imu')
+    bringup_pkg = get_package_share_directory('zeuscar_bringup')
+
+    # IMUフィルタ設定ファイルパス
+    imu_filter_params_file = os.path.join(
+        bringup_pkg, 'config', 'imu_filter_params.yaml'
+    )
 
     # Launch引数の宣言
     declare_use_lidar = DeclareLaunchArgument(
@@ -67,10 +75,25 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('use_imu')),
     )
 
+    # IMUフィルタノード（madgwick）
+    imu_filter_node = Node(
+        package='imu_filter_madgwick',
+        executable='imu_filter_madgwick_node',
+        name='imu_filter_madgwick_node',
+        output='screen',
+        parameters=[imu_filter_params_file],
+        remappings=[
+            ('imu/data_raw', '/imu/data_raw'),
+            ('imu/data', '/imu/data'),
+        ],
+        condition=IfCondition(LaunchConfiguration('use_imu')),
+    )
+
     return LaunchDescription([
         declare_use_lidar,
         declare_use_imu,
         declare_serial_port_lidar,
         lidar_launch,
         imu_launch,
+        imu_filter_node,
     ])

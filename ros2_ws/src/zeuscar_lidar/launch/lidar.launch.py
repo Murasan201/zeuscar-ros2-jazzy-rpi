@@ -35,7 +35,7 @@ def generate_launch_description():
     rplidar_node = Node(
         package='rplidar_ros',
         executable='rplidar_composition',
-        name='rplidar_node',
+        name='rplidar_composition',
         output='screen',
         parameters=[{
             'serial_port': LaunchConfiguration('serial_port'),

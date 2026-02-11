@@ -26,3 +26,4 @@
 |---|---|---|---|
 | EPIC-006 | EPIC-006_arduino_interface.md | Arduino通信インタフェース仕様書 | 作成済み |
 | STORY-025 | STORY-025_imu_publish_node.md | IMUデータパブリッシュノード仕様書 | 作成済み |
+| STORY-011 | STORY-011_odometry_slam_verification.md | オドメトリ統合・SLAM動作確認 実装計画書 | 作成済み |

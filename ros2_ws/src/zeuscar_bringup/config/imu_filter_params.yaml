@@ -1,0 +1,18 @@
+# ZeusCar IMUフィルタ設定ファイル
+# imu_filter_madgwickパッケージ用のパラメータ設定
+#
+# 用途: IMU生データ（加速度+ジャイロ）から姿勢（orientation）を推定する
+# センサー: ICM-42688 6軸IMU（磁力計なし）
+# 入力: /imu/data_raw → 出力: /imu/data（orientation付き）
+#
+# TSB-VIS-005対策: EKFドリフト抑制のためmadgwickフィルタを導入
+
+imu_filter_madgwick_node:
+  ros__parameters:
+    use_mag: false
+    publish_tf: false
+    world_frame: "enu"
+    gain: 0.1
+    fixed_frame: "base_link"
+    constant_dt: 0.0
+    publish_debug_topics: false

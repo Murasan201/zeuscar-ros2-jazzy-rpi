@@ -7,6 +7,9 @@
   <maintainer email="maintainer@example.com">pi</maintainer>
   <license>TODO: License declaration</license>
 
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>imu_filter_madgwick</exec_depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

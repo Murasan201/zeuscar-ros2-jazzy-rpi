@@ -38,10 +38,10 @@ slam_toolbox:
     resolution: 0.05                # マップ解像度（メートル/ピクセル）
     max_laser_range: 12.0           # RPLIDAR A1M8の最大距離
     minimum_time_interval: 0.5      # スキャン間の最小時間間隔
-    transform_timeout: 0.2          # TF変換タイムアウト
-    tf_buffer_duration: 30.0        # TFバッファ保持時間
-    stack_size_to_use: 40000000     # 大きなマップ用のスタックサイズ
-    enable_interactive_mode: true   # RVizでのインタラクティブモード
+    transform_timeout: 0.5          # TF変換タイムアウト（RPi4用に緩和）
+    tf_buffer_duration: 15.0        # TFバッファ保持時間（メモリ節約）
+    stack_size_to_use: 10000000     # スタックサイズ（RPi4: 40MB→10MBに削減）
+    enable_interactive_mode: false  # RViz未使用のため無効化（メモリ節約）
 
     # スキャンマッチング設定
     use_scan_matching: true

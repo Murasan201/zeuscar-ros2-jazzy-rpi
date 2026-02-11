@@ -73,9 +73,9 @@
 | STORY-008 | TFツリー設計・実装 | - | Done | EPIC-003 |
 | STORY-009 | zeuscar_slamパッケージ作成 | - | Done | EPIC-004 |
 | STORY-010 | slam_toolbox設定 | - | Done | EPIC-004 |
-| STORY-011 | マップ生成動作確認 | - | ToDo | ※オドメトリ統合待ち |
+| STORY-011 | マップ生成動作確認 | - | Done | ※全項目合格（2026-02-10） |
 | STORY-012 | RViz設定ファイル作成 | - | Done | EPIC-005 |
-| STORY-013 | LaserScan/TF/RobotModel表示確認 | - | ToDo | ※ディスプレイ接続待ち |
+| STORY-013 | LaserScan/TF/RobotModel表示確認 | - | Done | EPIC-005 |
 | STORY-016 | zeuscar_motorパッケージ作成 | - | Done | EPIC-006 |
 | STORY-017 | motor_controller_node実装 | - | Done | EPIC-006 |
 | STORY-018 | cmd_vel対応 | - | Done | EPIC-006 |
@@ -360,31 +360,161 @@
 3. **ドキュメント整備**
    - テスト計画書、トラブルシューティング、実装ガイド、設計仕様書を更新
 
+**2026-02-09: STORY-011 オドメトリ統合・SLAM動作確認開始**
+
+1. **Phase 1: robot_localization インストール・EKF設定**
+   - `ros-jazzy-robot-localization` インストール
+   - TDD Red: `test_ekf_launch.py` 21テスト作成
+   - TDD Green: `ekf_params.yaml`, `odometry.launch.py` 作成
+   - `zeuscar.launch.py` に `use_ekf` 引数追加
+   - `package.xml` に依存追加
+   - 全76テストパス（21新規 + 55既存）
+
+2. **Phase 2: 実機テスト — EKF単体（T-INT-01）: 合格**
+   - `ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true use_slam:=false use_motor:=false`
+   - `odom → base_footprint` TF配信確認済み
+   - `/odometry/filtered` トピック正常
+
+3. **Phase 3: 実機テスト — SLAM統合（T-INT-04）: 失敗→修正→再テスト**
+   - **問題1**: slam_toolboxがunconfigured状態で停止 → **解決**（TSB-EKF-008）
+     - Jazzy版はライフサイクルノード、`slam.launch.py` を LifecycleNode に変更
+   - **問題2**: LifecycleNode に namespace必須 → **解決**（TSB-EKF-009）
+   - **問題3**: RPi4メモリ圧迫で電源断 → **解決**（TSB-EKF-010）
+     - stack_size 40MB→10MB、EKF 50Hz→30Hz
+   - **問題4**: rplidar_compositionのノード名変更で/scanが消失 → **原因特定**（TSB-EKF-012）
+     - `name='rplidar_node'` → `name='rplidar_composition'` に変更が必要
+
+4. **Phase 3.5: DDS通信障害発覚 → 外部有識者により解決**
+   - ノード発見は正常だがトピックデータ送受信が一切不可
+   - `ros2 topic echo` が全トピックでタイムアウト
+   - 基本的な `std_msgs/String` の pub/sub すら失敗
+   - **原因**: FastRTPS共有メモリ（SHM）トランスポートの障害（TSB-EKF-013）
+   - **対策**: UDP専用XMLプロファイル作成 + `.bashrc` に環境変数設定
+   - **解決確認**: `std_msgs/String` のpub/subテストで通信復旧を確認
+
+5. **Phase 4: DDS解決後の再テスト — LiDAR問題で中断**
+   - TSB-EKF-012修正適用: `lidar.launch.py` のノード名を `rplidar_composition` に変更、ビルド完了
+   - `/scan` パブリッシャー登録成功（Publisher count: 1）を確認
+   - しかし `/scan` のデータフロー（hz/echo）は未確認のまま中断
+   - `killall -9` による強制終了でLiDARシリアルポートが不安定化（TSB-EKF-014）
+   - **次回再開時にUSBケーブル再接続が必要**
+
+6. **ドキュメント整備**
+   - 実装計画書: `docs/operations/specs/STORY-011_odometry_slam_verification.md`
+   - 実装ガイド: `docs/guides/odometry_ekf_implementation_guide.md`
+   - トラブルシューティング: `docs/operations/troubleshooting/STORY-011_odometry_ekf.md`（TSB 14件）
+   - セットアップガイド: Section 10（オドメトリ）追加
+
+**2026-02-10: STORY-011 SLAM統合テスト完了 — 全項目合格**
+
+1. **LiDARデバイス確認**
+   - TSB-EKF-014（シリアルポート不安定化）は時間経過で自然復旧
+   - `/dev/rplidar` → `ttyUSB0` 正常認識、USB再接続不要だった
+
+2. **FASTRTPS環境変数確認**
+   - `.bashrc` に設定済み、`/home/pi/fastrtps_udp_only.xml` 正常
+
+3. **LiDAR `/scan` データフロー確認 — 合格**
+   - 単体起動で `/scan` ~6.8Hz安定を確認（前回未確認だった項目）
+
+4. **全ノード統合起動 — 合格**
+   - `zeuscar.launch.py use_ekf:=true use_slam:=true use_motor:=false`
+   - 5ノード全て正常起動（robot_state_publisher, ekf, slam_toolbox, rplidar, imu）
+   - slam_toolbox: `active [3]` に自動遷移、LiDARセンサー登録成功
+   - TFツリー完全: `map→odom→base_footprint→base_link→{laser_frame, imu_link}`
+   - トピック確認: `/scan` ~6.8Hz、`/imu/data_raw` ~50Hz、`/odometry/filtered` ~30Hz、`/map` 配信OK
+
+5. **マップ生成・保存テスト — 合格**
+   - 問題: `save_map` サービスが `result=255` で失敗（TSB-EKF-015）
+   - 原因: `nav2-map-server` 未インストール
+   - 対策: `sudo apt-get install -y ros-jazzy-nav2-map-server`
+   - 再試行: `result=0`（成功）、`zeuscar_map.pgm` + `zeuscar_map.yaml` 生成確認
+   - マップ仕様: 68x80px、解像度0.05m（5cm/ピクセル）
+
+6. **ドキュメント整備**
+   - トラブルシューティング: TSB-EKF-014追記（自然復旧）、TSB-EKF-015追加
+   - 実装ガイド: Section 8（SLAM統合テスト結果）追加
+
+**2026-02-10: LiDARデータ検証・VNC調査**
+
+1. **LiDAR実データ検証**
+   - USB再接続後にLiDAR単体起動で `/scan` データ中身を確認
+   - 720ポイント/スキャン（360°、0.5°刻み）
+   - 距離データ: 0.19m〜3.4m の範囲で室内環境を正常にスキャン
+   - 近距離・中距離・遠距離の障害物検出OK、`inf`（開放空間）も正常
+   - **結論: LiDARは完全に正常動作**
+
+2. **TSB-EKF-014再発と対策**
+   - 前回のSIGTERM停止後にシリアルポート不安定化が再発
+   - SDK Version表示で停止する典型的な症状
+   - USB再接続で即座に復旧
+   - **教訓**: LiDARプロセス停止後は毎回デバイス状態を確認すること
+
+3. **STORY-013: RealVNC構築完了**
+   - RealVNC Server 7.12.0 インストール（TSB-VIS-001）
+   - Wayland無効化 → X11強制（TSB-VIS-002）
+   - GDM自動ログイン有効化（TSB-VIS-003）
+   - ヘッドレスHDMIダミーディスプレイ設定（TSB-VIS-004、主原因）
+     - `vc4-kms-v3d`（Full KMS）が `hdmi_force_hotplug` を無視する問題
+     - `video=HDMI-A-1:1920x1080@60D` をcmdline.txtに追加で解決
+   - VNC接続（1920x1080）でGNOMEデスクトップ表示成功
+   - トラブルシューティング: `docs/operations/troubleshooting/STORY-013_vnc_visualization.md`
+
+**2026-02-11: STORY-013 RViz可視化確認完了 — EPIC-005完了**
+
+1. **全ノード統合起動（EKF + SLAM + LiDAR + IMU + RViz2）**
+   - `zeuscar.launch.py use_ekf:=true use_slam:=true use_motor:=false use_rviz:=true`
+   - 6ノード全て正常起動（robot_state_publisher, ekf, slam_toolbox, rplidar, imu, rviz2）
+
+2. **RViz2表示確認 — 全4項目合格**
+   - LaserScan（/scan）: 赤色ポイントクラウド表示OK、部屋形状・方向が正確、手かざしで即座に反応
+   - TFツリー: `map→odom→base_footprint→base_link→{laser_frame, imu_link}` 全フレーム表示OK
+   - RobotModel: `/robot_description`からモデル表示OK
+   - Map（/map）: SLAM占有格子マップ（68x80px）表示OK
+
+3. **データフロー確認**
+   - `/scan`: Publisher 1, Subscriber 2（slam + rviz）
+   - `/map`: Publisher 1, Subscriber 2
+   - `/robot_description`: Publisher 1, Subscriber 1
+   - TF: `odom→base_footprint` ~26.9Hz、`map→odom` ~6.6Hz
+
+4. **バックログ更新**
+   - STORY-013 → Done、EPIC-005（可視化）→ Done
+   - **スプリント1の全ストーリー完了**
+
+**2026-02-11: imu_filter_madgwick導入（TSB-VIS-005対策）**
+
+1. **パッケージインストール**
+   - `ros-jazzy-imu-filter-madgwick` (v2.1.5) インストール
+
+2. **TDD Red→Green**
+   - テスト9件追加（計30件） → 実装 → 全30テストパス
+   - `imu_filter_params.yaml` 新規作成（madgwick設定）
+   - `ekf_params.yaml` 更新（`/imu/data` + orientation roll/pitch有効化）
+   - `sensors.launch.py` にmadgwickノード追加
+   - `package.xml` に依存追加
+
+3. **実機テスト合格**
+   - 5ノード正常起動（robot_state_publisher, ekf, rplidar, imu, imu_filter_madgwick）
+   - `/imu/data` にorientation付きデータ配信確認
+   - EKF `/odometry/filtered` に姿勢データ反映確認
+
+4. **ドキュメント更新**
+   - 実装ガイド: Section 10をmadgwick実装記録に更新
+   - セットアップガイド: Section 10.6にmadgwickインストール手順追加
+
 ---
 
 ### 次回再開時のアクション
 
-#### 優先度: 高
-
-1. **STORY-011: オドメトリ生成 → SLAM動作確認**
-   - robot_localizationパッケージのインストール
-   - IMUデータ（/imu/data_raw）からオドメトリを生成
-   - odom → base_footprint TFの確認
-   - LiDAR + TF + オドメトリを同時起動
-   - slam_toolboxでマッピング実行・マップ保存確認
-
-#### 優先度: 中（ディスプレイ接続時）
-
-2. **STORY-013: RViz表示確認**
-   - ディスプレイ接続またはVNC設定
-   - `ros2 launch zeuscar_bringup zeuscar.launch.py use_rviz:=true`
-   - LaserScan/TF/RobotModel/Map表示確認
-
 #### 優先度: 低（将来対応）
 
-3. **ホイールオドメトリの統合**
+1. **ホイールオドメトリの統合**
    - モーターエンコーダからオドメトリ計算
    - IMU + ホイールオドメトリのセンサーフュージョン
+
+2. **ナビゲーション（Nav2）の導入**
+   - 自律走行のためのNav2スタック構築
 
 ---
 
@@ -396,15 +526,18 @@
 - ros-jazzy-rplidar-ros
 - ros-jazzy-xacro
 - ros-jazzy-slam-toolbox
+- ros-jazzy-robot-localization (STORY-011)
+- ros-jazzy-nav2-map-server (STORY-011、マップ保存に必要)
+- ros-jazzy-imu-filter-madgwick (TSB-VIS-005対策、IMU姿勢推定)
 - i2c-tools
 - python3-pip
 - smbus2（pip）
 
 ビルド済みパッケージ:
-- zeuscar_bringup
+- zeuscar_bringup（EKF統合済み）
 - zeuscar_description
 - zeuscar_lidar
-- zeuscar_slam
+- zeuscar_slam（LifecycleNode対応済み）
 - zeuscar_motor（Arduino駆動系）
 - zeuscar_imu（IMU統合）
 
@@ -421,21 +554,56 @@
 - zeuscar_imu imu_publish_node（/imu/data_raw、~50Hz安定）
 - 統合bringup実機テスト S0-S5 全合格（55/55テストパス）
 - zeuscar.launch.py一発起動で全4ノード正常動作確認済み
+- EKF単体テスト合格（odom→base_footprint TF配信確認）  ← NEW
+- slam_toolbox LifecycleNode active [3] 到達確認  ← NEW
 
-確認中:
-（なし）
+動作確認済み（STORY-011統合テスト 2026-02-10）:
+- 全ノード統合起動（EKF + SLAM + LiDAR + IMU）正常動作
+- /scan データフロー ~6.8Hz安定
+- slam_toolbox active [3]、/map配信、map→odom TF ~6.9Hz
+- マップ保存（save_mapサービス → .pgm + .yaml）成功
 
-未確認:
-- slam_toolbox（オドメトリ待ち）
-- RViz2（ディスプレイ待ち）
-- robot_localization（オドメトリ生成、未インストール）
+動作確認済み（STORY-013 RViz可視化 2026-02-11）:
+- RViz2で LaserScan/TF/RobotModel/Map 全4項目表示確認合格
+- 6ノード同時稼働（robot_state_publisher, ekf, slam_toolbox, rplidar, imu, rviz2）
+
+既知の制限事項:
+- TSB-VIS-005: EKFドリフトによる点群表示ずれ
+  → imu_filter_madgwick導入でroll/pitchドリフト抑制済み（2026-02-11）
+  → yawドリフトは磁力計なしのため残存、slam_toolboxが補正
+  → ホイールオドメトリ統合で更に改善可能
+
+解決済み:
+- DDS通信障害（TSB-EKF-013: FastRTPS UDP専用プロファイルで解決）
+- rplidar ノード名問題（TSB-EKF-012: rplidar_compositionに修正済み）
+- LiDARシリアルポート不安定化（TSB-EKF-014: 時間経過で自然復旧確認）
+- save_map失敗（TSB-EKF-015: nav2-map-server導入で解決）
+- VNC環境構築（TSB-VIS-001〜004: 全て解決済み）
+
+新規インストール:
+- realvnc-vnc-server 7.12.0（VNCリモートデスクトップ）
+
+VNC接続:
+- RealVNC Server稼働中（192.168.11.20:5900、1920x1080）
+- ヘッドレス環境対応済み（cmdline.txtダミーディスプレイ設定）
+
+注意事項:
+- 非対話シェルではFASTRTPS_DEFAULT_PROFILES_FILEを明示的にexportすること
+- LiDARプロセス停止後は毎回デバイス状態を確認すること（TSB-EKF-014教訓）
+- RViz2はRPi4で重いため、可能ならリモートPC側で実行すること
 ```
 
 #### PMブリーフ管理
 
 | ID | 概要 | ステータス |
 |---|---|---|
-| - | - | - |
+| TSB-EKF-013 | FastRTPS DDS通信障害（RPi4 Jazzy） | 解決済み |
+| TSB-EKF-014 | LiDARシリアルポート不安定化 | 解決済み（自然復旧確認） |
+| TSB-EKF-015 | save_map失敗（nav2-map-server未インストール） | 解決済み |
+| TSB-VIS-001 | RealVNC Server未インストール（Ubuntu 24.04） | 解決済み |
+| TSB-VIS-002 | Wayland有効でVNC黒画面 | 解決済み |
+| TSB-VIS-003 | GUIセッション未ログインでVNC黒画面 | 解決済み |
+| TSB-VIS-004 | ヘッドレスHDMI未検出（KMSドライバ問題） | 解決済み |
 
 ---
 
@@ -462,3 +630,8 @@
 | 2026-02-07 | - | STORY-025 IMUパブリッシュノード実装完了（17/17テストパス） |
 | 2026-02-07 | - | STORY-014/015 統合bringup設計・実装（51/51テストパス） |
 | 2026-02-08 | - | 実機統合テスト S0-S5 全合格、TSB-INT-003対策（TimerAction導入、55/55テストパス） |
+| 2026-02-09 | - | STORY-011開始: EKF実装（76テストパス）、slam_toolbox LifecycleNode対応、DDS障害→解決、LiDARノード名修正 |
+| 2026-02-10 | - | STORY-011完了: SLAM統合テスト全項目合格、マップ保存成功、nav2-map-serverインストール、TSB-EKF-015追加 |
+| 2026-02-10 | - | STORY-013準備: RealVNC Server構築（TSB-VIS-001〜004解決）、VNC経由デスクトップ表示成功 |
+| 2026-02-11 | - | STORY-013完了: RViz2全4項目合格（LaserScan/TF/RobotModel/Map）、EPIC-005完了、スプリント1全ストーリー完了 |
+| 2026-02-11 | - | imu_filter_madgwick導入（TSB-VIS-005対策）: TDD 30/30テストパス、実機テスト合格 |
