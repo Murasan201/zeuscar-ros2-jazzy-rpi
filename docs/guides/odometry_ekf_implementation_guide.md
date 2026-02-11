@@ -170,14 +170,31 @@ source install/setup.bash
 python3 -m pytest src/zeuscar_bringup/test/test_ekf_launch.py -v
 ```
 
-### テスト項目（21件）
+### ユニットテスト実行結果（2026-02-11、30テスト全パス）
 
-- `ekf_params.yaml` の存在と内容検証（13件）
-  - フレーム名、IMUトピック、imu0_config の各フラグ
-- `odometry.launch.py` の構造検証（5件）
-  - ファイル存在、import可能、Launch Arguments、EKFノード含有
-- `zeuscar.launch.py` の `use_ekf` 引数検証（2件）
-- `package.xml` の依存確認（1件）
+```bash
+# 実行コマンド（ros2_ws/ディレクトリで実行）
+python3 -m pytest src/zeuscar_bringup/test/test_ekf_launch.py -v
+```
+
+**結果: 30 passed in 1.81s**
+
+#### テストクラス構成
+
+| # | クラス名 | テスト数 | 内容 |
+|---|---|---|---|
+| 1 | TestEkfParamsFile | 15 | ekf_params.yaml の存在・フレーム名・IMUトピック・imu0_config各フラグ・orientation設定 |
+| 2 | TestOdometryLaunchFile | 5 | odometry.launch.py の存在・import・Launch Arguments・EKFノード含有 |
+| 3 | TestZeuscarEkfArgument | 2 | zeuscar.launch.py の use_ekf 引数検証 |
+| 4 | TestImuFilterParamsFile | 5 | imu_filter_params.yaml の存在・use_mag・publish_tf・world_frame・gain |
+| 5 | TestSensorsLaunchMadgwick | 1 | sensors.launch.py に madgwick ノードが含まれること |
+| 6 | TestPackageXmlDependency | 2 | package.xml に robot_localization・imu_filter_madgwick 依存 |
+
+#### 特記事項
+
+- **ハードウェア不要**: 設定ファイル・launchファイルの値検証のみ。LiDAR・IMU接続なしで実行可能
+- テストファイル: `ros2_ws/src/zeuscar_bringup/test/test_ekf_launch.py`
+- クラス1〜3は初期実装時（21件）、クラス4〜6はmadgwick導入時（9件追加）に作成
 
 ---
 

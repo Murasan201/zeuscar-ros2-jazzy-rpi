@@ -275,9 +275,53 @@ RViz2起動直後は全方向の点群（LaserScan）が正しい位置に表示
 
 ---
 
+## ハードウェアなしで実行可能なユニットテスト
+
+VNC・RViz2の実機確認にはハードウェア（LiDAR・IMU）とGUI環境が必要だが、設定ファイル・launchファイルの値検証はハードウェアなしで実行できる。
+
+### 実行手順
+
+```bash
+cd ~/ros2_ws
+
+# ビルド（初回または変更後）
+colcon build --packages-select zeuscar_bringup
+source install/setup.bash
+
+# ユニットテスト実行
+python3 -m pytest src/zeuscar_bringup/test/test_ekf_launch.py -v
+```
+
+### テスト結果（2026-02-11）
+
+```
+30 passed in 1.81s
+```
+
+### テスト内容
+
+| クラス名 | テスト数 | 検証対象 |
+|---|---|---|
+| TestEkfParamsFile | 15 | ekf_params.yaml（フレーム名、IMUトピック、imu0_config各フラグ、orientation設定） |
+| TestOdometryLaunchFile | 5 | odometry.launch.py（ファイル存在、import、Launch Arguments、EKFノード含有） |
+| TestZeuscarEkfArgument | 2 | zeuscar.launch.py の use_ekf 引数 |
+| TestImuFilterParamsFile | 5 | imu_filter_params.yaml（use_mag、publish_tf、world_frame、gain） |
+| TestSensorsLaunchMadgwick | 1 | sensors.launch.py に madgwick ノードが含まれること |
+| TestPackageXmlDependency | 2 | package.xml の依存（robot_localization、imu_filter_madgwick） |
+
+### 補足
+
+- LiDAR・IMU接続不要、GUI環境不要
+- SSH経由のヘッドレス環境でも実行可能
+- テストファイル: `ros2_ws/src/zeuscar_bringup/test/test_ekf_launch.py`
+- 設定変更やlaunchファイル修正後の回帰テストとして活用できる
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |---|---|
 | 2026-02-10 | 初版作成（TSB-VIS-001〜004、RealVNCヘッドレス環境構築の全記録） |
 | 2026-02-11 | TSB-VIS-005追加（EKFドリフトによる点群表示ずれ、原因分析と対策方針） |
+| 2026-02-11 | ハードウェアなしで実行可能なユニットテスト手順を追記（30テスト全パス） |
