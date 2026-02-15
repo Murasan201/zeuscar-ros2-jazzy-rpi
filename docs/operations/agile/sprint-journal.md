@@ -537,33 +537,56 @@
 
 4. **コミット・プッシュ済み**
 
+**2026-02-15: madgwick実機テスト・モーター+IMU比較テスト**
+
+1. **madgwick実機動作確認 — 合格**
+   - 5ノード全て正常起動（robot_state_publisher, rplidar, imu, imu_filter_madgwick, ekf）
+   - `/imu/data` に有効な四元数を確認（orientation: x=0.012, y=0.0005, z=0.859, w=0.511）
+   - `/odometry/filtered` にEKF姿勢データ反映確認
+   - `odom→base_footprint` TF配信確認（RPY: 0.6°, -1.5°, 6.6°）
+
+2. **モーター動作確認**
+   - motor_controller_node起動、シリアル接続正常（/dev/ttyACM0 @ 9600bps）
+   - 左旋回5秒: 正常動作（車輪継続回転を確認）
+   - 右旋回3秒: 正常動作
+   - 前進2秒: 正常動作
+   - 初回テスト時 `--times 5 --rate 10`（0.5秒分）では動作時間が短く「一瞬だけ動く」に見えた
+     → `--times 50 --rate 10`（5秒分）に変更して継続動作を確認
+
+3. **モーター+IMU比較テスト（部分成功）**
+   - 左旋回中のIMU: `angular_velocity.z = +0.482 rad/s` — 回転を正しく検出
+   - 全方向テストはArduino電源断により中断
+
+4. **Arduino電源断問題（TSB-MOT-001/002）**
+   - 3回発生（詳細は `docs/operations/troubleshooting/motor_arduino_power.md`）
+     - 1回目: スクリプト不具合で全方向モーター同時実行
+     - 2回目: 前進→壁衝突→モーターストール→大電流で電圧降下
+     - 3回目: モーター非駆動時に発生 → バッテリー残量不足が主原因と推定
+   - 別プロセスからのシリアルポート同時アクセスもArduinoリセットの原因（TSB-MOT-002）
+   - バッテリー充電後に再テスト予定
+
+5. **ドキュメント整備**
+   - `docs/operations/troubleshooting/motor_arduino_power.md` 新規作成（TSB-MOT-001/002）
+   - `docs/operations/troubleshooting/README.md` 索引更新
+
 ---
 
 ### 次回再開時のアクション
 
-#### 優先度: 高（実機テスト未完了）
+#### 優先度: 高
 
-1. **madgwick実機動作確認**
-   - **前提条件**: LiDAR・IMUのUSB/I2C接続が必要（ディスプレイ不要、SSH経由で実行可能）
-   - **手順**:
-     1. SSH接続（`ssh pi@192.168.11.20` 等）
-     2. madgwickノード含む起動:
-        ```bash
-        source /opt/ros/jazzy/setup.bash
-        source ~/project/zeuscar-ros2-jazzy-rpi/ros2_ws/install/setup.bash
-        export FASTRTPS_DEFAULT_PROFILES_FILE=/home/pi/fastrtps_udp_only.xml
-        ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true use_slam:=false use_motor:=false
-        ```
-     3. 別ターミナルで確認:
-        ```bash
-        # madgwickノード起動確認
-        ros2 node list | grep madgwick
-        # /imu/data のorientation値確認（四元数が非ゼロであること）
-        ros2 topic echo /imu/data --once
-        ```
-   - **確認項目**:
-     - `imu_filter_madgwick` ノードが起動していること
-     - `/imu/data` トピックの `orientation` フィールドに有効な四元数（w,x,y,z）が含まれること
+1. **バッテリーを十分に充電してからテストを行うこと**
+
+2. **モーター+IMU回転テスト再実施**
+   - テストスクリプト: `/tmp/imu_motor_test.py`（回転のみ版）
+   - 手順:
+     1. バッテリー充電状態を確認
+     2. launch起動: `ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true use_slam:=false use_motor:=true`
+     3. テスト実行: `python3 /tmp/imu_motor_test.py`
+   - 確認項目:
+     - 左旋回時に `angular_velocity.z` が正の値
+     - 右旋回時に `angular_velocity.z` が負の値
+     - orientation.z の変化が旋回方向と一致
 
 #### 優先度: 低（将来対応）
 
@@ -695,3 +718,5 @@ VNC接続:
 | 2026-02-11 | - | imu_filter_madgwick導入（TSB-VIS-005対策）: TDD 30/30テストパス、実機テスト合格 |
 | 2026-02-11 | - | ユニットテスト実行結果記録: test_ekf_launch.py 30テスト全パス（1.81s）、6クラス構成、ハードウェア不要 |
 | 2026-02-11 | - | 作業状況まとめ: UT30件全パス、madgwick実機テスト未実施→次回アクション記録、ドキュメント更新・コミット済み |
+| 2026-02-15 | - | madgwick実機テスト合格、モーター動作確認合格、モーター+IMU比較テスト部分成功（左旋回gz=+0.482検出） |
+| 2026-02-15 | - | Arduino電源断問題3回発生→TSB-MOT-001/002記録、バッテリー残量不足で中断 |
