@@ -138,7 +138,7 @@ sudo i2cdetect -y 1
 70: -- -- -- -- -- -- -- --
 ```
 
-`68` が表示されていれば IMU が正しく認識されています。表示されない場合は「6. トラブルシューティング」の「6.1 IMU が検出されない」を参照してください。
+`68` が表示されていれば IMU が正しく認識されています。表示されない場合は「8. トラブルシューティング」の「8.1 IMU が検出されない」を参照してください。
 
 ### 2.4 smbus2 ライブラリのインストール
 
@@ -342,7 +342,7 @@ ros2 launch zeuscar_imu imu_test.launch.py
 
 ## 5. IMU データパブリッシュノード（実装予定）
 
-> **注意**: このセクションは STORY-025 Green フェーズ完了後に使用可能になります。現時点では実装予定の仕様を記載しています。
+> **注意**: このセクションの機能は STORY-025 で実装済みです。
 
 ### 5.1 概要
 
@@ -477,9 +477,221 @@ ROS 2 では SI 単位系が標準です。ICM-42688 から取得した生デー
 
 ---
 
-## 6. トラブルシューティング
+## 6. 姿勢推定フィルタ（imu_filter_madgwick）
 
-### 6.1 IMU が検出されない
+### 6.1 なぜ姿勢推定フィルタが必要か
+
+6軸 IMU（加速度 + ジャイロ）は `/imu/data_raw` で角速度と加速度を配信しますが、**絶対姿勢（orientation）は計算できません**。そのため `orientation_covariance[0] = -1.0`（無効）が設定されています。
+
+しかし、EKF（Extended Kalman Filter）やナビゲーションでは姿勢データが必要です。`imu_filter_madgwick` は加速度とジャイロを組み合わせて姿勢（roll/pitch）を推定し、orientation 付きの `/imu/data` トピックを配信します。
+
+```
+/imu/data_raw (orientation なし)
+    ↓ imu_filter_madgwick
+/imu/data (orientation あり)
+    ↓ robot_localization (EKF)
+/odometry/filtered (姿勢反映済み)
+```
+
+> **制限事項**: 6軸 IMU には磁力計がないため、yaw（水平方向の向き）は推定できません。madgwick が推定できるのは roll（前後傾き）と pitch（左右傾き）のみです。yaw のドリフトは slam_toolbox やホイールオドメトリで補正します。
+
+### 6.2 インストール
+
+```bash
+sudo apt install -y ros-jazzy-imu-filter-madgwick
+```
+
+### 6.3 設定ファイル
+
+ZeusCar では `zeuscar_bringup/config/imu_filter_params.yaml` に設定が定義されています。
+
+| パラメータ | 値 | 説明 |
+|-----------|-----|------|
+| `use_mag` | false | 磁力計なし（6軸 IMU） |
+| `publish_tf` | false | TF は EKF が配信するため無効 |
+| `gain` | 0.1 | フィルタゲイン（小さいほど安定、大きいほど追従性向上） |
+| `world_frame` | `enu` | East-North-Up 座標系（ROS 2 標準） |
+
+### 6.4 起動方法
+
+madgwick フィルタは `zeuscar.launch.py` の統合 launch に含まれており、IMU が有効な場合に自動的に起動します。
+
+```bash
+# 統合 launch（IMU + madgwick + EKF）
+ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true
+```
+
+個別に起動する場合：
+
+```bash
+ros2 launch zeuscar_bringup sensors.launch.py
+```
+
+### 6.5 動作確認
+
+```bash
+# /imu/data トピックの存在確認
+ros2 topic list | grep imu
+```
+
+期待される出力：
+
+```
+/imu/data
+/imu/data_raw
+```
+
+```bash
+# orientation データの確認
+ros2 topic echo /imu/data --qos-reliability best_effort --once
+```
+
+`orientation` フィールドに有効な四元数（x, y, z, w の値が 0 でない）が含まれていれば正常です。
+
+```yaml
+orientation:
+  x: 0.012
+  y: 0.0005
+  z: 0.859
+  w: 0.511
+```
+
+---
+
+## 7. モーター + IMU 統合検証テスト
+
+### 7.1 テストの目的
+
+IMU が実際のロボットの動きを正しく検出できるかを検証します。モーターでロボットを動かしながら IMU データを記録し、以下を確認します：
+
+- 旋回時のジャイロスコープの符号が物理的な回転方向と一致するか
+- 旋回時の姿勢（yaw）変化が方向と一致するか
+- 直進時にジャイロスコープがほぼゼロ（回転なし）を示すか
+- EKF の出力が madgwick と一致するか
+
+### 7.2 事前条件
+
+- バッテリーが十分に充電されていること（電圧低下で Arduino が電源断する場合がある）
+- ロボットの周囲に十分なスペースがあること（直進テストは 1 秒程度の短距離）
+- IMU と Arduino が Raspberry Pi に接続されていること
+
+### 7.3 テスト構成
+
+| 項目 | 値 |
+|------|-----|
+| launch 引数 | `use_ekf:=true use_slam:=false use_motor:=true use_lidar:=false` |
+| 起動ノード | robot_state_publisher, motor_controller_node, ekf, imu_node, imu_filter_madgwick |
+| 購読トピック | `/imu/data_raw`, `/imu/data`, `/odometry/filtered` |
+| 発行トピック | `/cmd_vel` |
+
+### 7.4 テスト実行手順
+
+#### ターミナル 1: ノードを起動
+
+```bash
+source ~/ros2_ws/install/setup.bash
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/pi/fastrtps_udp_only.xml
+ros2 launch zeuscar_bringup zeuscar.launch.py \
+  use_ekf:=true use_slam:=false use_motor:=true use_lidar:=false
+```
+
+5 ノード全て起動したことを確認します：
+
+```
+[robot_state_publisher-1]: Robot initialized
+[motor_controller_node-2]: MotorControllerNode started. Serial: /dev/ttyACM0 @ 9600bps
+[imu_node-4]: IMUパブリッシュノード開始: 50.0 Hz, frame_id=imu_link
+[imu_filter_madgwick_node-5]: First IMU message received.
+```
+
+#### ターミナル 2: テストスクリプトを実行
+
+テストスクリプトは以下の動作を自動で実行し、各動作中の IMU データを記録・表示します。
+
+**旋回テスト**（主目的、ジャイロと姿勢の方向検証）：
+
+```python
+# /cmd_vel で angular.z を送信
+# 左旋回: angular.z = +0.5 (4秒間)
+# 右旋回: angular.z = -0.5 (4秒間)
+```
+
+**直進テスト**（補助、回転成分がゼロであることの確認）：
+
+```python
+# /cmd_vel で linear.x, linear.y を送信
+# 前進:     linear.x = +0.3 (1秒間)
+# 後退:     linear.x = -0.3 (1秒間)
+# 左横移動: linear.y = +0.3 (1秒間)
+# 右横移動: linear.y = -0.3 (1秒間)
+```
+
+> **注意**: 直進テストは狭い場所でも安全なよう 1 秒間に設定しています。壁に衝突すると衝撃で IMU データに異常値が混入するため、十分なスペースを確保してください。
+
+### 7.5 判定基準
+
+#### 旋回テスト
+
+| 確認項目 | 合格基準 | 説明 |
+|---------|---------|------|
+| 左旋回時 `angular_velocity.z` | 平均値 > 0 | 正の角速度 = 反時計回り |
+| 右旋回時 `angular_velocity.z` | 平均値 < 0 | 負の角速度 = 時計回り |
+| 左旋回時 yaw delta | 正の値（数十度以上） | 姿勢が反時計方向に変化 |
+| 右旋回時 yaw delta | 負の値（数十度以上） | 姿勢が時計方向に変化 |
+| madgwick と EKF の yaw delta | おおむね一致 | フィルタ処理の整合性 |
+
+#### 直進テスト
+
+| 確認項目 | 合格基準 | 説明 |
+|---------|---------|------|
+| `angular_velocity.z` 平均 | ±0.05 rad/s 以内 | 直進時は回転しないはず |
+| `angular_velocity.z` min/max | ±0.2 以内 | 衝突がなければ振れ幅は小さい |
+| EKF yaw drift | ±3° 以内 | 短時間の直進では大きなドリフトは発生しない |
+
+### 7.6 テスト実績（2026-02-23）
+
+#### 旋回テスト結果
+
+| テスト | gyro_z avg (rad/s) | yaw delta (madgwick) | yaw delta (EKF) | 判定 |
+|--------|-------------------|---------------------|----------------|------|
+| 左旋回 4s | +0.379 | +93.9° | +93.9° | PASS |
+| 右旋回 4s | -0.388 | -97.8° | -98.0° | PASS |
+
+#### 直進テスト結果（2 回実施、再現性確認）
+
+1 回目:
+
+| テスト | gyro_z avg | gyro_z range | EKF yaw drift | 判定 |
+|--------|-----------|-------------|---------------|------|
+| FORWARD 1.0s | -0.021 | -0.12 / +0.07 | -1.5° | PASS |
+| BACKWARD 1.0s | +0.023 | -0.07 / +0.15 | +1.8° | PASS |
+| STRAFE LEFT 1.0s | -0.022 | -0.09 / +0.06 | -1.5° | PASS |
+| STRAFE RIGHT 1.0s | +0.010 | -0.09 / +0.16 | +0.7° | PASS |
+
+2 回目:
+
+| テスト | gyro_z avg | gyro_z range | EKF yaw drift | 判定 |
+|--------|-----------|-------------|---------------|------|
+| FORWARD 1.0s | -0.017 | -0.08 / +0.07 | -1.3° | PASS |
+| BACKWARD 1.0s | +0.023 | -0.07 / +0.11 | +1.6° | PASS |
+| STRAFE LEFT 1.0s | -0.026 | -0.10 / +0.04 | -1.9° | PASS |
+| STRAFE RIGHT 1.0s | +0.012 | -0.08 / +0.11 | +0.8° | PASS |
+
+### 7.7 よくある問題と対処
+
+| 症状 | 原因 | 対処法 |
+|------|------|--------|
+| gyro_z の min/max が ±0.3 を超える | 壁への衝突や障害物との接触 | テスト時間を短くする、十分なスペースを確保する |
+| テスト中に Arduino が切断される | バッテリー残量不足 or モーターストール | バッテリーを充電する、壁に衝突しないよう注意 |
+| `/imu/data` が NO DATA | madgwick フィルタ未起動 | `use_ekf:=true` で起動しているか確認 |
+| `/odometry/filtered` が NO DATA | EKF 未起動 | `use_ekf:=true` で起動しているか確認 |
+| ノードリストに重複が表示される | 前回のプロセスが残存 | `pkill -9 -f "ros2"` で全プロセスを停止してから再起動 |
+
+---
+
+## 8. トラブルシューティング
+
+### 8.1 IMU が検出されない
 
 **症状**: `sudo i2cdetect -y 1` で 0x68 が表示されない。
 
@@ -506,7 +718,7 @@ ROS 2 では SI 単位系が標準です。ICM-42688 から取得した生デー
    - CS が 3.3V（HIGH）に接続されていることを確認
    - LOW になっていると SPI モードになり、I2C では認識されません
 
-### 6.2 WHO_AM_I 値が不正
+### 8.2 WHO_AM_I 値が不正
 
 **症状**: `WHO_AM_I: 0xFF (期待値: 0x47)` と表示される。
 
@@ -518,7 +730,7 @@ ROS 2 では SI 単位系が標準です。ICM-42688 から取得した生デー
 | 0x00 | 電源未供給 | VCC と GND の配線を確認 |
 | 0x47 以外の有効値 | 別のセンサーが接続されている | ICM-42688 モジュールであることを確認 |
 
-### 6.3 加速度値が異常に小さい（スケールファクター問題）
+### 8.3 加速度値が異常に小さい（スケールファクター問題）
 
 **症状**: 静止状態で accel_z が 1.0 g ではなく、非常に小さい値（例: 0.06 g）になる。
 
@@ -536,7 +748,7 @@ ACCEL_SCALE = 2048.0   # ±16g設定時: 2048 LSB/g
 GYRO_SCALE = 131.0     # ±250dps設定時: 131 LSB/dps
 ```
 
-### 6.4 smbus2 のインストールエラー
+### 8.4 smbus2 のインストールエラー
 
 **症状**: `pip3 install smbus2` で `externally-managed-environment` エラーが発生する。
 
@@ -551,7 +763,7 @@ error: externally-managed-environment
 pip3 install --break-system-packages smbus2
 ```
 
-### 6.5 python コマンドが見つからない
+### 8.5 python コマンドが見つからない
 
 **症状**: `python` コマンドを実行すると `command not found` エラーになる。
 
@@ -569,7 +781,7 @@ python3 -c "import smbus2; print('smbus2 OK')"
 
 ---
 
-## 7. 関連ドキュメント
+## 9. 関連ドキュメント
 
 - [ICM-42688 IMUセンサー仕様書](../hardware/icm42688_imu_sensor.md) - ハードウェアの詳細仕様、ピン配置、座標系の情報
 - [STORY-025 仕様書](../operations/specs/STORY-025_imu_publish_node.md) - IMUデータパブリッシュノードの設計仕様
@@ -582,3 +794,4 @@ python3 -c "import smbus2; print('smbus2 OK')"
 | 日付 | 内容 |
 |------|------|
 | 2026-02-06 | 初版作成 |
+| 2026-02-23 | Section 6（madgwickフィルタ）、Section 7（モーター+IMU統合検証テスト）追加、セクション番号整理 |

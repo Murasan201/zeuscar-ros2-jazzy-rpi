@@ -52,6 +52,7 @@
 - [specs/STORY-014-015_bringup_design.md](operations/specs/STORY-014-015_bringup_design.md) - 統合bringup設計仕様書（全パッケージ統合起動の設計）
 - [specs/integration_test_plan.md](operations/specs/integration_test_plan.md) - 実機統合テスト計画書（全コンポーネント同時起動テスト）
 - [specs/STORY-011_odometry_slam_verification.md](operations/specs/STORY-011_odometry_slam_verification.md) - オドメトリ統合・SLAM動作確認 実装計画書
+- [specs/wheel_odom_sensor_fusion.md](operations/specs/wheel_odom_sensor_fusion.md) - ホイールオドメトリ統合（センサーフュージョン）仕様書
 
 ### エスカレーション (operations/pm-briefs/)
 

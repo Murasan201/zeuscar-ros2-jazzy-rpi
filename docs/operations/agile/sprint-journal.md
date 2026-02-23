@@ -569,32 +569,114 @@
    - `docs/operations/troubleshooting/motor_arduino_power.md` 新規作成（TSB-MOT-001/002）
    - `docs/operations/troubleshooting/README.md` 索引更新
 
+**2026-02-23: モーター+IMU統合テスト完了 — 全項目合格**
+
+1. **テスト構成**
+   - launch: `zeuscar.launch.py use_ekf:=true use_slam:=false use_motor:=true use_lidar:=false`
+   - 5ノード: robot_state_publisher, motor_controller_node, ekf, imu, imu_filter_madgwick
+   - Arduino電源断なし（バッテリー充電済み）
+
+2. **旋回テスト — 合格**
+
+   | テスト | gyro_z avg | yaw delta (madgwick) | yaw delta (EKF) | 判定 |
+   |--------|-----------|---------------------|----------------|------|
+   | 左旋回 4s | **+0.379** rad/s | **+93.9°** | **+93.9°** | PASS |
+   | 右旋回 4s | **-0.388** rad/s | **-97.8°** | **-98.0°** | PASS |
+
+   - 左旋回でgyro_z正、右旋回でgyro_z負 — 正しい方向
+   - orientation yaw変化が旋回方向と一致
+   - madgwickとEKFの出力が一致
+
+3. **直進テスト（前後左右）— 合格（2回実施、再現性確認）**
+
+   1回目:
+
+   | テスト | gyro_z avg | gyro_z range | accel 主軸 | EKF yaw drift | 判定 |
+   |--------|-----------|-------------|-----------|---------------|------|
+   | FORWARD 1.0s | -0.021 | -0.12 / +0.07 | accel_x=+0.45 | -1.5° | PASS |
+   | BACKWARD 1.0s | +0.023 | -0.07 / +0.15 | accel_x=-0.18 | +1.8° | PASS |
+   | STRAFE LEFT 1.0s | -0.022 | -0.09 / +0.06 | accel_y=+0.68 | -1.5° | PASS |
+   | STRAFE RIGHT 1.0s | +0.010 | -0.09 / +0.16 | accel_y=+0.72 | +0.7° | PASS |
+
+   2回目:
+
+   | テスト | gyro_z avg | gyro_z range | accel 主軸 | EKF yaw drift | 判定 |
+   |--------|-----------|-------------|-----------|---------------|------|
+   | FORWARD 1.0s | -0.017 | -0.08 / +0.07 | accel_x=+0.04 | -1.3° | PASS |
+   | BACKWARD 1.0s | +0.023 | -0.07 / +0.11 | accel_x=+0.55 | +1.6° | PASS |
+   | STRAFE LEFT 1.0s | -0.026 | -0.10 / +0.04 | accel_y=-0.18 | -1.9° | PASS |
+   | STRAFE RIGHT 1.0s | +0.012 | -0.08 / +0.11 | accel_y=+0.72 | +0.8° | PASS |
+
+   - gyro_z: 全方向でほぼ0（直進なので回転なし）— 正常
+   - EKF yaw drift: 全て2°以内 — 安定
+   - 2回の結果が一貫しており再現性あり
+
+4. **備考**
+   - 初回テスト時、前進1.5sで壁に衝突（gyro_z rangeが±0.33に拡大）
+   - 移動時間を1.0sに短縮して再テスト、衝突なしでgyro_z rangeが±0.12以内に安定
+   - 前回（2026-02-15）中断の原因だったArduino電源断は今回発生せず
+
+**2026-02-23: ホイールオドメトリ統合検討・仕様書作成**
+
+1. **センサーフュージョン精度の検討**
+   - 現状構成（LiDAR + IMU）で屋内構造化環境では十分実用的な精度が出る
+   - slam_toolboxのスキャンマッチングが位置推定の主役であり、壁・家具がある環境で高精度
+   - IMUはヨー角変化を補助提供し、スキャンマッチングの初期推定を支援
+   - **結論**: まずは現状のLiDAR + IMU構成で実機マッピングを実施し、精度不足を感じた場合にホイールオドメトリを追加する段階的アプローチが合理的
+
+2. **LiDAR + IMUのみの限界（把握済み）**
+
+   | シーン | 理由 |
+   |---|---|
+   | 長い廊下・広い空間 | LiDAR特徴点が少なくスキャンマッチング不安定 |
+   | スキャン間の高速移動 | EKFに速度情報がなく位置予測不可 |
+   | 回転なしの直進 | IMUはジャイロのみ使用、直進移動量を推定不可 |
+
+3. **ホイールオドメトリ追加の主な効果**
+   - 精度の劇的改善よりも**ロバスト性の向上**が主効果
+   - 停止時のゼロ速度拘束（ドリフト防止）
+   - スキャンマッチング失敗時のフォールバック
+   - slam_toolbox不使用時の粗い移動軌跡
+
+4. **仕様書作成完了**
+   - `docs/operations/specs/wheel_odom_sensor_fusion.md` 新規作成（全17セクション）
+   - 設計方針: コマンドベース速度推定（エンコーダ未搭載のため）
+   - 新規ノード `wheel_odom_node`（zeuscar_motorパッケージ内）
+   - `twist_converter.py` 共有モジュール抽出
+   - EKF `odom0` として vx, vy のみ融合
+   - メカナムキネマティクス11コマンドマッピング表
+   - キャリブレーション手順（V_linear, V_strafe, V_diag, W_angular）
+
+5. **バックログ更新**
+   - EPIC-008追加（ホイールオドメトリ統合）
+   - STORY-026: twist_converter共有モジュール作成
+   - STORY-027: wheel_odom_node実装
+   - STORY-028: EKF設定更新（odom0追加）
+   - STORY-029: キャリブレーション実施・統合テスト
+   - `docs/README.md` 索引更新
+
 ---
 
 ### 次回再開時のアクション
 
 #### 優先度: 高
 
-1. **バッテリーを十分に充電してからテストを行うこと**
+1. **LiDAR + IMU構成での実機マッピング走行テスト**
+   - 現状構成でどの程度の精度が出るか評価する
+   - 部屋のマップを生成し、形状の正確さを確認
+   - 走行中のオドメトリドリフトを定量的に記録
+   - 結果を元にホイールオドメトリの必要性を判断
 
-2. **モーター+IMU回転テスト再実施**
-   - テストスクリプト: `/tmp/imu_motor_test.py`（回転のみ版）
-   - 手順:
-     1. バッテリー充電状態を確認
-     2. launch起動: `ros2 launch zeuscar_bringup zeuscar.launch.py use_ekf:=true use_slam:=false use_motor:=true`
-     3. テスト実行: `python3 /tmp/imu_motor_test.py`
-   - 確認項目:
-     - 左旋回時に `angular_velocity.z` が正の値
-     - 右旋回時に `angular_velocity.z` が負の値
-     - orientation.z の変化が旋回方向と一致
+2. **ホイールオドメトリ統合（EPIC-008）**（マッピング精度が不十分な場合）
+   - STORY-026: twist_converter共有モジュール作成（TDD Red→Green）
+   - STORY-027: wheel_odom_node実装（TDD Red→Green）
+   - STORY-028: EKF設定更新（odom0追加）
+   - STORY-029: キャリブレーション実施・統合テスト
+   - 仕様書: `docs/operations/specs/wheel_odom_sensor_fusion.md`
 
-#### 優先度: 低（将来対応）
+#### 優先度: 中
 
-1. **ホイールオドメトリの統合**
-   - モーターエンコーダからオドメトリ計算
-   - IMU + ホイールオドメトリのセンサーフュージョン
-
-2. **ナビゲーション（Nav2）の導入**
+3. **ナビゲーション（Nav2）の導入**
    - 自律走行のためのNav2スタック構築
 
 ---
@@ -647,6 +729,12 @@
 動作確認済み（STORY-013 RViz可視化 2026-02-11）:
 - RViz2で LaserScan/TF/RobotModel/Map 全4項目表示確認合格
 - 6ノード同時稼働（robot_state_publisher, ekf, slam_toolbox, rplidar, imu, rviz2）
+
+動作確認済み（モーター+IMU統合テスト 2026-02-23）:
+- 旋回テスト: 左旋回gyro_z=+0.379, 右旋回gyro_z=-0.388（方向正常）
+- 旋回yaw: madgwickとEKFが一致（左+93.9°、右-97.8°）
+- 直進テスト: 前後左右4方向でgyro_z≒0、EKF yaw drift 2°以内
+- 2回実施で再現性確認済み
 
 既知の制限事項:
 - TSB-VIS-005: EKFドリフトによる点群表示ずれ
@@ -720,3 +808,5 @@ VNC接続:
 | 2026-02-11 | - | 作業状況まとめ: UT30件全パス、madgwick実機テスト未実施→次回アクション記録、ドキュメント更新・コミット済み |
 | 2026-02-15 | - | madgwick実機テスト合格、モーター動作確認合格、モーター+IMU比較テスト部分成功（左旋回gz=+0.482検出） |
 | 2026-02-15 | - | Arduino電源断問題3回発生→TSB-MOT-001/002記録、バッテリー残量不足で中断 |
+| 2026-02-23 | - | モーター+IMU統合テスト全項目合格（旋回2種+直進4方向×2回、再現性確認、Arduino電源断なし） |
+| 2026-02-23 | - | ホイールオドメトリ統合検討: LiDAR+IMUで屋内は十分、段階的アプローチ採用。仕様書作成、EPIC-008/STORY-026〜029登録 |

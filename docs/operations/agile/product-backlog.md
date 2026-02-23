@@ -15,6 +15,7 @@
 | EPIC-005 | 可視化 | RVizによる可視化環境 | Done |
 | EPIC-006 | Arduino駆動系統合 | Raspberry Pi-Arduino間の通信インタフェース | Done |
 | EPIC-007 | IMU統合 | ICM-42688 6軸IMUのROS 2統合 | Done |
+| EPIC-008 | ホイールオドメトリ統合 | コマンドベース速度推定によるセンサーフュージョン | Ready |
 
 ---
 
@@ -78,6 +79,15 @@
 | STORY-024 | IMU動作確認 | High | - | Done | - |
 | STORY-025 | IMUデータパブリッシュノード実装 | Medium | - | Done | [STORY-025_imu_publish_node.md](../specs/STORY-025_imu_publish_node.md) |
 
+### EPIC-008: ホイールオドメトリ統合（センサーフュージョン）
+
+| ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
+|---|---|---|---|---|---|
+| STORY-026 | twist_converter共有モジュール作成 | High | - | Ready | [wheel_odom_sensor_fusion.md](../specs/wheel_odom_sensor_fusion.md) |
+| STORY-027 | wheel_odom_node実装 | High | - | Ready | [wheel_odom_sensor_fusion.md](../specs/wheel_odom_sensor_fusion.md) |
+| STORY-028 | EKF設定更新（odom0追加） | High | - | Ready | [wheel_odom_sensor_fusion.md](../specs/wheel_odom_sensor_fusion.md) |
+| STORY-029 | キャリブレーション実施・統合テスト | Medium | - | Ready | [wheel_odom_sensor_fusion.md](../specs/wheel_odom_sensor_fusion.md) |
+
 ### 統合・起動
 
 | ID | タイトル | 優先度 | 見積 | ステータス | 仕様書 |
@@ -117,3 +127,4 @@
 | 2026-02-07 | - | STORY-014/015 Done（統合bringup設計・テスト51件・実装完了） |
 | 2026-02-10 | - | STORY-011を Done に更新（SLAM統合テスト全項目合格、マップ保存成功）、EPIC-004完了 |
 | 2026-02-11 | - | STORY-013を Done に更新（RViz2全4項目合格）、EPIC-005完了 |
+| 2026-02-23 | - | EPIC-008追加（ホイールオドメトリ統合）、STORY-026〜029を登録 |
